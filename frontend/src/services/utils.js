@@ -1,5 +1,5 @@
 var _ = require('lodash')
-import { $t } from 'boot/i18n'
+import { useI18n } from 'vue-i18n';
 
 export default {
   htmlEncode(html) {
@@ -62,11 +62,25 @@ export default {
   // Update all basic-editor when noSync is necessary for performance (text with images). 
   syncEditors: function(refs) {
     Object.keys(refs).forEach(key => {
-      if (key.startsWith('basiceditor_') && refs[key]) // ref must start with 'basiceditor_'
-        (Array.isArray(refs[key]))? refs[key].forEach(elt => elt.updateHTML()) : refs[key].updateHTML()
-      else if (refs[key] && refs[key].$refs) // check for editors in child components
-        this.syncEditors(refs[key].$refs)
-    })
+      // Check if ref starts with 'basiceditor_'
+      if (key.startsWith('basiceditor_') && refs[key]) {
+        // Handle both array and single ref scenarios
+        if (Array.isArray(refs[key])) {
+          console.log('array', refs[key])
+          refs[key].forEach(elt => {
+            if (typeof elt.updateHTML === 'function') {
+              elt.updateHTML();
+            }
+          });
+        } else if (typeof refs[key].updateHTML === 'function') {
+          refs[key].updateHTML();
+        }
+      } 
+      // Check for nested refs in child components
+      else if (refs[key] && refs[key].$refs) {
+        this.syncEditors(refs[key].$refs);
+      }
+    });
   },
 
   // Compress images to allow more storage in database since limit in a mongo document is 16MB
@@ -193,10 +207,11 @@ export default {
   },
 
   strongPassword: function(value) {
+    const t = useI18n();
     var regExp = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}/;
     if (regExp.test(value))
       return true
-    return $t('msg.passwordComplexity')
+    return t('msg.passwordComplexity')
   },
 
   // Return black or white color depending on background color

@@ -5,7 +5,7 @@
     :state="parentState"
     :approvals="parentApprovals"
     :path="($parent.audit.parentId) ? `/audits/${$parent.audit.parentId}` : ''"
-    :path-name="($parent.audit.type === 'retest') ? $t('originalAudit') : ($parent.audit.type === 'default') ? $t('multi') : ''"
+    :path-name="($parent.audit.type === 'retest') ? t('originalAudit') : ($parent.audit.type === 'default') ? t('multi') : ''"
     >
     </breadcrumb>
 
@@ -25,12 +25,12 @@
                 @row-dblclick="dblClick"
             >
                 <template v-slot:top>
-                    <q-toggle :label="$t('myAudits')" v-model="myAudits" />
+                    <q-toggle :label="t('myAudits')" v-model="myAudits" />
                     <q-space />
                     <q-btn 
                     color="secondary"
                     unelevated
-                    :label="$t('newAudit')"
+                    :label="t('newAudit')"
                     no-caps
                     @click="cleanCurrentAudit(); $refs.createModal.show()"
                     />    
@@ -46,7 +46,7 @@
                             <div v-if="['name', 'users', 'date'].indexOf(col.name) > -1">
                                 <q-input 
                                 dense
-                                :label="$t('search')"
+                                :label="t('search')"
                                 v-model="search[col.name]"
                                 clearable
                                 :autofocus="col.name === 'name'"
@@ -56,7 +56,7 @@
                             <div v-else-if="col.name === 'company'">
                                 <q-select
                                     dense 
-                                    :label="$t('search')"
+                                    :label="t('search')"
                                     :options="companies"
                                     v-model="search.company"
                                     option-value="name"
@@ -71,7 +71,7 @@
                             <div v-else-if="col.name === 'language'">
                                 <q-select 
                                 dense
-                                :label="$t('search')"
+                                :label="t('search')"
                                 :options="languages"
                                 v-model="search.language"
                                 option-value="locale"
@@ -98,15 +98,15 @@
                 </q-td>
                 <q-td slot="body-cell-action" slot-scope="props" style="width:1px">
                     <q-btn flat color="primary" icon="fa fa-plus-circle" @click="updateAuditParent(props.row)">
-                        <q-tooltip anchor="bottom middle" self="center left" :delay="500" content-class="text-bold">{{$t('tooltip.addAudit')}}</q-tooltip>                            
+                        <q-tooltip anchor="bottom middle" self="center left" :delay="500" content-class="text-bold">{{t('tooltip.addAudit')}}</q-tooltip>                            
                     </q-btn>
                 </q-td>
 
                 <template v-slot:bottom="scope">
-                    <span v-if="audits.length === 1">1 {{$t('auditNum1')}}</span>                
-                    <span v-else>{{audits.length}} {{$t('auditNums')}}</span> 
+                    <span v-if="audits.length === 1">1 {{t('auditNum1')}}</span>                
+                    <span v-else>{{audits.length}} {{t('auditNums')}}</span> 
                     <q-space />
-                    <span>{{$t('resultsPerPage')}}</span>
+                    <span>{{t('resultsPerPage')}}</span>
                     <q-select
                     class="q-px-md"
                     v-model="pagination.rowsPerPage"
@@ -128,14 +128,14 @@
         <q-card style="width:800px">
             <q-bar class="bg-fixed-primary text-white">
                 <div class="q-toolbar-title">
-                    {{$t('createAudit')}}
+                    {{t('createAudit')}}
                 </div>
                 <q-space />
                 <q-btn dense flat icon="close" @click="$refs.createModal.hide()" />
             </q-bar>
             <q-card-section>
                 <q-input
-                :label="$t('name')+' *'"
+                :label="t('name')+' *'"
                 :error="!!errors.name"
                 :error-message="errors.name"
                 autofocus
@@ -144,7 +144,7 @@
                 outlined
                 />
                 <q-select
-                :label="$t('selectAssessment')+' *'"
+                :label="t('selectAssessment')+' *'"
                 :error="!!errors.auditType"
                 :error-message="errors.auditType"
                 v-model="currentAudit.auditType"
@@ -157,7 +157,7 @@
                 outlined
                 /> 
                 <q-select 
-                :label="$t('selectLanguage')+' *'"
+                :label="t('selectLanguage')+' *'"
                 :error="!!errors.language"
                 :error-message="errors.language"
                 v-model="currentAudit.language" 
@@ -174,8 +174,8 @@
             <q-separator />
 
             <q-card-actions align="right">
-                <q-btn color="primary" outline @click="$refs.createModal.hide()">{{$t('btn.cancel')}}</q-btn>
-                <q-btn color="secondary" unelevated @click="createAudit()">{{$t('btn.create')}}</q-btn>
+                <q-btn color="primary" outline @click="$refs.createModal.hide()">{{t('btn.cancel')}}</q-btn>
+                <q-btn color="secondary" unelevated @click="createAudit()">{{t('btn.create')}}</q-btn>
             </q-card-actions>
         </q-card>
     </q-dialog>

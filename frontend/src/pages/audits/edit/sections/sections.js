@@ -6,12 +6,15 @@ import CustomFields from 'components/custom-fields';
 
 import AuditService from '@/services/audit';
 import DataService from '@/services/data';
-import UserService from '@/services/user';
+import {user} from '@/services/user';
 import Utils from '@/services/utils';
 
-import { $t } from '@/boot/i18n'
+import { useI18n } from 'vue-i18n';
 
 export default {
+    setup: () => {
+        return {t, user}
+    },
     props: {
         frontEndAuditState: Number,
         parentState: String,
@@ -77,21 +80,21 @@ export default {
 
         if (this.unsavedChanges()) {
             Dialog.create({
-            title: $t('msg.thereAreUnsavedChanges'),
-            message: $t('msg.doYouWantToLeave'),
-            ok: {label: $t('btn.confirm'), color: 'negative'},
-            cancel: {label: $t('btn.cancel'), color: 'white'},
+            title: t('msg.thereAreUnsavedChanges'),
+            message: t('msg.doYouWantToLeave'),
+            ok: {label: t('btn.confirm'), color: 'negative'},
+            cancel: {label: t('btn.cancel'), color: 'white'},
             focus: 'cancel'
             })
             .onOk(() => next())
         }
         else if (displayHighlightWarning) {
             Dialog.create({
-                title: $t('msg.highlightWarningTitle'),
+                title: t('msg.highlightWarningTitle'),
                 message: `${displayHighlightWarning}</mark>`,
                 html: true,
-                ok: {label: $t('btn.leave'), color: 'negative'},
-                cancel: {label: $t('btn.stay'), color: 'white'},
+                ok: {label: t('btn.leave'), color: 'negative'},
+                cancel: {label: t('btn.stay'), color: 'white'},
             })
             .onOk(() => next())
         }
@@ -106,21 +109,21 @@ export default {
 
         if (this.unsavedChanges()) {
             Dialog.create({
-            title: $t('msg.thereAreUnsavedChanges'),
-            message: $t('msg.doYouWantToLeave'),
-            ok: {label: $t('btn.confirm'), color: 'negative'},
-            cancel: {label: $t('btn.cancel'), color: 'white'},
+            title: t('msg.thereAreUnsavedChanges'),
+            message: t('msg.doYouWantToLeave'),
+            ok: {label: t('btn.confirm'), color: 'negative'},
+            cancel: {label: t('btn.cancel'), color: 'white'},
             focus: 'cancel'
             })
             .onOk(() => next())
         }
         else if (displayHighlightWarning) {
             Dialog.create({
-                title: $t('msg.highlightWarningTitle'),
+                title: t('msg.highlightWarningTitle'),
                 message: `${displayHighlightWarning}</mark>`,
                 html: true,
-                ok: {label: $t('btn.leave'), color: 'negative'},
-                cancel: {label: $t('btn.stay'), color: 'white'},
+                ok: {label: t('btn.leave'), color: 'negative'},
+                cancel: {label: t('btn.stay'), color: 'white'},
             })
             .onOk(() => next())
         }
@@ -163,7 +166,7 @@ export default {
             this.$nextTick(() => {
                 if (this.$refs.customfields && this.$refs.customfields.requiredFieldsEmpty()) {
                     Notify.create({
-                        message: $t('msg.fieldRequired'),
+                        message: t('msg.fieldRequired'),
                         color: 'negative',
                         textColor:'white',
                         position: 'top-right'
@@ -174,7 +177,7 @@ export default {
                 .then(() => {
                     this.sectionOrig = this.$_.cloneDeep(this.section);
                     Notify.create({
-                        message: $t('msg.sectionUpdateOk'),
+                        message: t('msg.sectionUpdateOk'),
                         color: 'positive',
                         textColor:'white',
                         position: 'top-right'
@@ -256,10 +259,10 @@ export default {
                 _id: 42,
                 sectionId: this.sectionId,
                 fieldName: fieldName,
-                authorId: UserService.user.id,
+                authorId: user.id,
                 author: {
-                    firstname: UserService.user.firstname,
-                    lastname: UserService.user.lastname
+                    firstname: user.firstname,
+                    lastname: user.lastname
                 },
                 text: "" 
             }
@@ -302,7 +305,7 @@ export default {
                 comment.text = comment.textTemp
             if (comment.replyTemp){
                 comment.replies.push({
-                    author: UserService.user.id,
+                    author: user.id,
                     text: comment.replyTemp
                 })
             }
@@ -360,9 +363,9 @@ export default {
                 count = this.$parent.audit.comments.filter(e => e.resolved).length
             
             if (count === 1)
-                return `${count} ${$t('item')}`
+                return `${count} ${t('item')}`
             else
-                return `${count} ${$t('items')}`
+                return `${count} ${t('items')}`
         },
 
         unsavedChanges: function() {  

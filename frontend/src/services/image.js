@@ -1,15 +1,15 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
 
 export default {
-  getImage: function(imageId) {
-    return Vue.prototype.$axios.get(`images/${imageId}`)
+  getImage: async (imageId) => {
+    return axiosInstance.get(`images/${imageId}`)
   },
 
-  createImage: function(image) {
-    return Vue.prototype.$axios.post('images', image)
+  createImage: async (image) => {
+    return axiosInstance.post('images', image)
   },
 
-  deleteImage: function(imageId) {
-    return Vue.prototype.$axios.delete(`images/${imageId}`)
+  deleteImage: async (imageId) => {
+    return axiosInstance.delete(`images/${imageId}`)
   }
 }

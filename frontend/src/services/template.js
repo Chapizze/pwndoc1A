@@ -1,23 +1,23 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
 
 export default {
-  getTemplates: function() {
-    return Vue.prototype.$axios.get(`templates`)
+  getTemplates: async () => {
+    return axiosInstance.get(`templates`)
   },
 
-  createTemplate: function(template) {
-    return Vue.prototype.$axios.post('templates', template)
+  createTemplate: async (template) => {
+    return axiosInstance.post('templates', template)
   },
 
-  updateTemplate: function(templateId, template) {
-    return Vue.prototype.$axios.put(`templates/${templateId}`, template)
+  updateTemplate: async (templateId, template) => {
+    return axiosInstance.put(`templates/${templateId}`, template)
   },
 
-  deleteTemplate: function(templateId) {
-    return Vue.prototype.$axios.delete(`templates/${templateId}`)
+  deleteTemplate: async (templateId) => {
+    return axiosInstance.delete(`templates/${templateId}`)
   },
 
-  downloadTemplate: function(templateId) {
-    return Vue.prototype.$axios.get(`templates/download/${templateId}`, {responseType: 'blob'})
+  downloadTemplate: async (templateId) => {
+    return axiosInstance.get(`templates/download/${templateId}`, {responseType: 'blob'})
   }
 }

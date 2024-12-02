@@ -20,7 +20,8 @@ services:
     ports:
       - 8081:8081
     networks:
-      - backend
+      backend: 
+        ipv4_address: 10.225.0.4
 
 networks:
   backend:

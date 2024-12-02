@@ -1,18 +1,18 @@
 <div>
 <breadcrumb
 buttons
-:title="`${$parent.audit.name} (${$parent.audit.auditType || 'Audit Type not set'})`"
+:title="`${audit.name} (${audit.auditType || 'Audit Type not set'})`"
 :state="parentState"
 :approvals="parentApprovals"
-:path="($parent.audit.parentId) ? `/audits/${$parent.audit.parentId}` : ''"
-:path-name="($parent.audit.type === 'retest') ? $t('originalAudit') : ($parent.audit.type === 'default') ? $t('multi') : ''"
+:path="(audit.parentId) ? `/audits/${audit.parentId}` : ''"
+:path-name="(audit.type === 'retest') ? t('originalAudit') : (audit.type === 'default') ? t('multi') : ''"
 >
-    <div slot="buttons">
-      <q-btn v-if="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" color="positive" :label="$t('btn.save')+' (ctrl+s)'" no-caps @click="updateAuditGeneral" />
-    </div>
+<template v-slot:buttons>
+    <q-btn v-if="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" color="positive" :label="t('btn.save') + ' (ctrl+s)'" no-caps @click="updateAuditGeneral" />
+</template>
 </breadcrumb>
 
-<div class="row q-col-gutter-md q-pa-md">
+<div class="row q-col-gutter-md q-pa-md" >
     <div class="col-md-8 offset-md-2 col-12">
         <q-card>
             <q-card-section>
@@ -23,16 +23,16 @@ buttons
                     label-slot
                     v-model="audit.name"
                     outlined
-                    :rules="[val => !!val || $t('fieldIsRequired')]"
+                    :rules="[val => !!val || t('fieldIsRequired')]"
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
                         <template v-slot:label>
-                            {{$t('name')}} <span class="text-red">*</span>
+                            {{t('name')}} <span class="text-red">*</span>
                         </template>
                     </q-input>
                     <div class="col"></div>
                     <q-select 
                     class="col-md-6 col-12 q-pt-none"
-                    :label="$t('language')"
+                    :label="t('language')"
                     v-model="audit.language" 
                     :options="languages" 
                     option-value="locale" 
@@ -45,7 +45,7 @@ buttons
                     />
                     <q-select
                     class="col-md-6 col-12 q-pt-none"
-                    :label="$t('template')"
+                    :label="t('template')"
                     v-model="audit.template"
                     :options="templates"
                     option-value="_id"
@@ -79,12 +79,12 @@ buttons
                     options-sanitize
                     use-input
                     outlined
-                    :rules="($settings.report.public.requiredFields.company) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="($settings?.report?.public?.requiredFields.company) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT"
                     >
                         <template v-slot:label>
-                            {{$t('company')}} <span v-if="$settings.report.public.requiredFields.company" class="text-red">*</span>
+                            {{t('company')}} <span v-if="$settings?.report?.public?.requiredFields?.company" class="text-red">*</span>
                         </template>
                     </q-select>
                     <q-select
@@ -100,17 +100,17 @@ buttons
                     clearable
                     options-sanitize
                     outlined
-                    :rules="($settings.report.public.requiredFields.client) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="($settings?.report?.public?.requiredFields.client) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT"
                     >
                         <template v-slot:label>
-                            {{$t('client')}} <span v-if="$settings.report.public.requiredFields.client" class="text-red">*</span>
+                            {{t('client')}} <span v-if="$settings?.report?.public?.requiredFields?.client" class="text-red">*</span>
                         </template>
                     </q-select>
                     <q-select 
                     class="col-md-12 col-12 q-pt-none"
-                    :label="$t('collaborators')"
+                    :label="t('collaborators')"
                     stack-label
                     v-model="audit.collaborators"
                     :options="collaborators"
@@ -146,9 +146,9 @@ buttons
                         </template>
                     </q-select>
                     <q-select 
-                    v-if="$settings.reviews.enabled"
+                    v-if="$settings?.reviews?.enabled"
                     class="col-md-12 col-12"
-                    :label="$t('reviewers')"
+                    :label="t('reviewers')"
                     stack-label
                     v-model="audit.reviewers"
                     :options="reviewers"
@@ -185,7 +185,7 @@ buttons
                     class="col-md-4 col-12"
                     label-slot
                     v-model="audit.date_start"
-                    :rules="($settings.report.public.requiredFields.dateStart) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="($settings?.report?.public?.requiredFields?.dateStart) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     outlined 
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
@@ -197,7 +197,7 @@ buttons
                             </q-icon>
                         </template>
                         <template v-slot:label>
-                            {{$t('startDate')}} <span v-if="$settings.report.public.requiredFields.dateStart" class="text-red">*</span>
+                            {{t('startDate')}} <span v-if="$settings?.report?.public?.requiredFields?.dateStart" class="text-red">*</span>
                         </template>
                     </q-input>
                     <q-input
@@ -205,7 +205,7 @@ buttons
                     class="col-md-4 col-12"
                     label-slot
                     v-model="audit.date_end"
-                    :rules="($settings.report.public.requiredFields.dateEnd) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="($settings?.report?.public?.requiredFields?.dateEnd) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     outlined
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
@@ -217,7 +217,7 @@ buttons
                             </q-icon>
                         </template>
                         <template v-slot:label>
-                            {{$t('endDate')}} <span v-if="$settings.report.public.requiredFields.dateEnd" class="text-red">*</span>
+                            {{t('endDate')}} <span v-if="$settings?.report?.public?.requiredFields?.dateEnd" class="text-red">*</span>
                         </template>
                     </q-input>
                     <q-input
@@ -225,7 +225,7 @@ buttons
                     class="col-md-4 col-12"
                     label-slot
                     v-model="audit.date"
-                    :rules="($settings.report.public.requiredFields.dateReport) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="($settings?.report?.public?.requiredFields?.dateReport) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     outlined
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
@@ -237,7 +237,7 @@ buttons
                             </q-icon>
                         </template>
                         <template v-slot:label>
-                            {{$t('reportingDate')}} <span v-if="$settings.report.public.requiredFields.dateReport" class="text-red">*</span>
+                            {{t('reportingDate')}} <span v-if="$settings?.report?.public?.requiredFields?.dateReport" class="text-red">*</span>
                         </template>
                     </q-input>
                 </div>
@@ -246,9 +246,9 @@ buttons
             <q-card-section class="q-pt-none">
                 <textarea-array
                 ref="scopeField"
-                :label="$t('auditScope')" 
+                :label="t('auditScope')" 
                 v-model="audit.scope" 
-                :rules="($settings.report.public.requiredFields.scope) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                :rules="($settings?.report?.public?.requiredFields?.scope) ? [val => !!val || t('fieldIsRequired')] : ['']"
                 :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT"/>
             </q-card-section>
             <q-card-section>
@@ -274,17 +274,17 @@ buttons
                    {{attach.filename}}
                     <q-tooltip anchor="top right" self="center right" :delay="500" content-class="text-bold large-tooltip"> {{attach}}</q-tooltip>
                     <q-btn flat color="info" @click="downloadDocument(index)">
-                        <q-tooltip self="center right" :delay="500" content-class="text-bold">{{$t('tooltip.downloadAttachement')}}</q-tooltip> 
+                        <q-tooltip self="center right" :delay="500" content-class="text-bold">{{t('tooltip.downloadAttachement')}}</q-tooltip> 
                             <i class="fa fa-download fa-lg"></i>
                     </q-btn>
                     <q-btn flat color="info" @click="deleteDocument(index)" size="25px">
-                        <q-tooltip self="center right" :delay="500" content-class="text-bold"> {{$t('tooltip.deleteAttachement')}}</q-tooltip> 
+                        <q-tooltip self="center right" :delay="500" content-class="text-bold"> {{t('tooltip.deleteAttachement')}}</q-tooltip> 
                             <i class="material-icons">delete</i>
                     </q-btn> 
                 </div>
             </q-card-section>   
             <q-expansion-item 
-            :label="$t('customFields')"
+            :label="t('customFields')"
             v-if="audit.customFields && audit.customFields.length > 0"
             default-opened
             header-class="bg-blue-grey-5 text-white" 

@@ -1,107 +1,108 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
 
 export default {
-    getRoles: function() {
-        return Vue.prototype.$axios.get(`data/roles`)
-    },
+  getRoles: async () => {
+    return axiosInstance.get('data/roles')
+  },
 
-    getLanguages: function() {
-        return Vue.prototype.$axios.get(`data/languages`)
-    },
+  getLanguages: async () => {
+    return axiosInstance.get('data/languages')
+  },
 
-    createLanguage: function(language) {
-        return Vue.prototype.$axios.post(`data/languages`, language)
-    },
+  createLanguage: async (language) => {
+    return axiosInstance.post('data/languages', language)
+  },
 
-    deleteLanguage: function(locale) {
-        return Vue.prototype.$axios.delete(`data/languages/${locale}`)
-    },
+  deleteLanguage: async (locale) => {
+    return axiosInstance.delete(`data/languages/${locale}`)
+  },
 
-    updateLanguages: function(languages) {
-        return Vue.prototype.$axios.put(`data/languages`, languages)
-    },
+  updateLanguages: async (languages) => {
+    return axiosInstance.put('data/languages', languages)
+  },
 
-    getAuditTypes: function() {
-        return Vue.prototype.$axios.get(`data/audit-types`)
-    },
+  getAuditTypes: async () => {
+    return axiosInstance.get('data/audit-types')
+  },
 
-    createAuditType: function(auditType) {
-        return Vue.prototype.$axios.post(`data/audit-types`, auditType)
-    },
+  createAuditType: async (auditType) => {
+    console.log(auditType)
+    return axiosInstance.post('data/audit-types', auditType)
+  },
 
-    deleteAuditType: function(name) {
-        return Vue.prototype.$axios.delete(`data/audit-types/${name}`)
-    },
+  deleteAuditType: async (name) => {
+    return axiosInstance.delete(`data/audit-types/${name}`)
+  },
 
-    updateAuditTypes: function(auditTypes) {
-        return Vue.prototype.$axios.put(`data/audit-types`, auditTypes)
-    },
+  updateAuditTypes: async (auditTypes) => {
+    return axiosInstance.put('data/audit-types', auditTypes)
+  },
 
-    getVulnerabilityTypes: function() {
-        return Vue.prototype.$axios.get(`data/vulnerability-types`)
-    },
+  getVulnerabilityTypes: async () => {
+    return axiosInstance.get('data/vulnerability-types')
+  },
 
-    createVulnerabilityType: function(vulnerabilityType) {
-        return Vue.prototype.$axios.post(`data/vulnerability-types`, vulnerabilityType)
-    },
+  createVulnerabilityType: async (vulnerabilityType) => {
+    return axiosInstance.post('data/vulnerability-types', vulnerabilityType)
+  },
 
-    deleteVulnerabilityType: function(name) {
-        return Vue.prototype.$axios.delete(`data/vulnerability-types/${name}`)
-    },
+  deleteVulnerabilityType: async (name) => {
+    return axiosInstance.delete(`data/vulnerability-types/${name}`)
+  },
 
-    updateVulnTypes: function(vulnTypes) {
-        return Vue.prototype.$axios.put(`data/vulnerability-types`, vulnTypes)
-    },
+  updateVulnTypes: async (vulnTypes) => {
+    return axiosInstance.put('data/vulnerability-types', vulnTypes)
+  },
 
-    getVulnerabilityCategories: function() {
-        return Vue.prototype.$axios.get(`data/vulnerability-categories`)
-    },
+  getVulnerabilityCategories: async () => {
+    return axiosInstance.get('data/vulnerability-categories')
+  },
 
-    createVulnerabilityCategory: function(vulnerabilityCategory) {
-        return Vue.prototype.$axios.post(`data/vulnerability-categories`, vulnerabilityCategory)
-    },
+  createVulnerabilityCategory: async (vulnerabilityCategory) => {
+    return axiosInstance.post('data/vulnerability-categories', vulnerabilityCategory)
+  },
 
-    updateVulnerabilityCategories: function(vulnCategories) {
-        return Vue.prototype.$axios.put(`data/vulnerability-categories/`, vulnCategories)
-    },
+  updateVulnerabilityCategories: async (vulnCategories) => {
+    return axiosInstance.put('data/vulnerability-categories', vulnCategories)
+  },
 
-    deleteVulnerabilityCategory: function(name) {
-        return Vue.prototype.$axios.delete(`data/vulnerability-categories/${name}`)
-    },
+  deleteVulnerabilityCategory: async (name) => {
+    return axiosInstance.delete(`data/vulnerability-categories/${name}`)
+  },
 
-    getCustomFields: function() {
-        return Vue.prototype.$axios.get(`data/custom-fields`)
-    },
+  getCustomFields: async () => {
+    return axiosInstance.get('data/custom-fields')
+  },
 
-    createCustomField: function(customField) {
-        return Vue.prototype.$axios.post(`data/custom-fields`, customField)
-    },
+  createCustomField: async (customField) => {
+    return axiosInstance.post('data/custom-fields', customField)
+  },
 
-    updateCustomFields: function(customFields) {
-        return Vue.prototype.$axios.put(`data/custom-fields/`, customFields)
-    },
+  updateCustomFields: async (customFields) => {
+    return axiosInstance.put('data/custom-fields', customFields)
+  },
 
-    deleteCustomField: function(customFieldId) {
-        return Vue.prototype.$axios.delete(`data/custom-fields/${customFieldId}`)
-    },
+  deleteCustomField: async (customFieldId) => {
+    return axiosInstance.delete(`data/custom-fields/${customFieldId}`)
+  },
 
-    getSections: function() {
-        return Vue.prototype.$axios.get(`data/sections`)
-    },
+  getSections: async () => {
+    return axiosInstance.get('data/sections')
+  },
 
-    getSectionsByLanguage: function(locale) {
-        return Vue.prototype.$axios.get(`data/sections/${locale}`)
-    },
+  getSectionsByLanguage: async (locale) => {
+    return axiosInstance.get(`data/sections/${locale}`)
+  },
 
-    createSection: function(section) {
-        return Vue.prototype.$axios.post(`data/sections`, section)
-    },
+  createSection: async (section) => {
+    return axiosInstance.post('data/sections', section)
+  },
 
-    deleteSection: function(field, locale) {
-        return Vue.prototype.$axios.delete(`data/sections/${field}/${locale}`)
-    },
+  deleteSection: async (field, locale) => {
+    return axiosInstance.delete(`data/sections/${field}/${locale}`)
+  },
 
-    updateSections: function(sections) {
-        return Vue.prototype.$axios.put(`data/sections`, sections)
-    }
+  updateSections: async (sections) => {
+    return axiosInstance.put('data/sections', sections)
+  }
 }

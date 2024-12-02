@@ -5,7 +5,7 @@
             <q-separator class="q-mr-sm" vertical inset />
         </template>
         <span class="text-bold">{{title}}</span>
-        <div v-if="$settings.reviews.enabled && state !== 'EDIT'">
+        <div v-if="this.$settings?.reviews.enabled && state !== 'EDIT'">
             <audit-state-icon class="q-mx-sm" :approvals="approvals" :state="state"/>
         </div>
         <q-space />

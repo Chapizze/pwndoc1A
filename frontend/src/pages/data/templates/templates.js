@@ -1,226 +1,228 @@
 import { Dialog, Notify, exportFile } from 'quasar';
+import { ref, reactive, computed, onMounted, getCurrentInstance } from 'vue';
 
-import Breadcrumb from 'components/breadcrumb'
-
-import TemplateService from '@/services/template'
-import UserService from '@/services/user'
-import Utils from '@/services/utils'
-
-import { $t } from '@/boot/i18n'
+import Breadcrumb from 'components/breadcrumb';
+import TemplateService from '@/services/template';
+import {user, isAllowed} from '@/services/user';
+import Utils from '@/services/utils';
+import { useI18n } from 'vue-i18n';
 
 export default {
-    data: () => {
-        return {
-            UserService: UserService,
-            // Templates list
-            templates: [],
-            // Loading state
-            loading: true,
-            // Datatable headers
-            dtHeaders: [
-                {name: 'name', label: $t('name'), field: 'name', align: 'left', sortable: true},
-                {name: 'ext', label: $t('extension'), field: 'ext', align: 'left', sortable: true},
-                {name: 'action', label: '', field: 'action', align: 'left', sortable: false},
-            ],
-            // Datatable pagination
-            pagination: {
-                page: 1,
-                rowsPerPage: 25,
-                sortBy: 'name'
-            },
-            rowsPerPageOptions: [
-                {label:'25', value:25},
-                {label:'50', value:50},
-                {label:'100', value:100},
-                {label:'All', value:0}
-            ],
-            // Search filter
-            search: {name: '', ext: ''},
-            customFilter: Utils.customFilter,
-            // Errors messages
-            errors: {name: '', file: ''},
-            // Selected or New Vulnerability
-            currentTemplate: {
-                name: '',
-                file: '',
-                ext: ''
-            },
-            templateId: ''
+  setup() {
+    const { t } = useI18n();
+    const { proxy } = getCurrentInstance();
+
+    const templates = ref([]);
+    const loading = ref(true);
+    const dtHeaders = computed(() => [
+      { name: 'name', label: t('name'), field: 'name', align: 'left', sortable: true },
+      { name: 'ext', label: t('extension'), field: 'ext', align: 'left', sortable: true },
+      { name: 'action', label: '', field: 'action', align: 'left', sortable: false },
+    ]);
+    const pagination = reactive({
+      page: 1,
+      rowsPerPage: 25,
+      sortBy: 'name',
+    });
+    const rowsPerPageOptions = [
+      { label: '25', value: 25 },
+      { label: '50', value: 50 },
+      { label: '100', value: 100 },
+      { label: 'All', value: 0 },
+    ];
+    const search = reactive({ name: '', ext: '' });
+    const customFilter = Utils.customFilter;
+    const errors = reactive({ name: '', file: '' });
+    const currentTemplate = reactive({
+      name: '',
+      file: '',
+      ext: '',
+    });
+    const templateId = ref('');
+
+    const getTemplates = async () => {
+      loading.value = true;
+      try {
+        const data = await TemplateService.getTemplates();
+        templates.value = data.data.datas || [];
+        loading.value = false;
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    const downloadTemplate = async row => {
+      try {
+        const data = await TemplateService.downloadTemplate(row._id);
+        const status = exportFile(`${row.name}.${row.ext || 'docx'}`, data.data, { type: 'application/octet-stream' });
+        if (!status) throw status;
+      } catch (err) {
+        if (err.response.status === 404) {
+          Notify.create({
+            message: t('msg.templateNotFound'),
+            color: 'negative',
+            textColor: 'white',
+            position: 'top-right',
+          });
+        } else {
+          console.log(err.response);
         }
-    },
+      }
+    };
 
-    components: {
-        Breadcrumb
-    },
+    const createTemplate = async () => {
+      cleanErrors();
+      if (!currentTemplate.name) errors.name = t('msg.nameRequired');
+      if (!currentTemplate.file) errors.file = t('msg.fileRequired');
 
-    mounted: function() {
-        this.getTemplates()
-    },
+      if (errors.name || errors.file) return;
 
-    methods: {
-        getTemplates: function() {
-            this.loading = true
-            TemplateService.getTemplates()
-            .then((data) => {
-                this.templates = data.data.datas
-                this.loading = false
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-        },
+      try {
+        await TemplateService.createTemplate(currentTemplate);
+        getTemplates();
+        proxy.$refs.createModal.hide();
+        Notify.create({
+          message: t('msg.templateCreatedOk'),
+          color: 'positive',
+          textColor: 'white',
+          position: 'top-right',
+        });
+      } catch (err) {
+        Notify.create({
+          message: err.response.data.datas,
+          color: 'negative',
+          textColor: 'white',
+          position: 'top-right',
+        });
+      }
+    };
 
-        downloadTemplate: function(row) {
-            TemplateService.downloadTemplate(row._id)
-            .then((data) => {
-                var status = exportFile(`${row.name}.${row.ext || 'docx'}`, data.data, {type: "application/octet-stream"})
-                if (!status)
-                    throw (status)
-            })
-            .catch((err) => {
-                if (err.response.status === 404) {
-                    Notify.create({
-                        message: $t('msg.templateNotFound'),
-                        color: 'negative',
-                        textColor: 'white',
-                        position: 'top-right'
-                    })
-                }
-                else
-                    console.log(err.response)
-            })
-        },
+    const updateTemplate = async () => {
+      cleanErrors();
+      if (!currentTemplate.name) errors.name = t('msg.nameRequired');
 
-        createTemplate: function() {
-            this.cleanErrors();
-            if (!this.currentTemplate.name)
-                this.errors.name = $t('msg.nameRequired');
-            if (!this.currentTemplate.file)
-                this.errors.file = $t('msg.fileRequired');
-                
-            if (this.errors.name || this.errors.file)
-                return;
+      if (errors.name) return;
 
-            TemplateService.createTemplate(this.currentTemplate)
-            .then(() => {
-                this.getTemplates();
-                this.$refs.createModal.hide();
-                Notify.create({
-                    message: $t('msg.templateCreatedOk'),
-                    color: 'positive',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-            .catch((err) => {
-                Notify.create({
-                    message: err.response.data.datas,
-                    color: 'negative',
-                    textColor: 'white',
-                    position: 'top-right'
-                })
-            })
-        },
+      try {
+        await TemplateService.updateTemplate(templateId.value, currentTemplate);
+        getTemplates();
+        proxy.$refs.editModal.hide();
+        Notify.create({
+          message: t('msg.templateUpdatedOk'),
+          color: 'positive',
+          textColor: 'white',
+          position: 'top-right',
+        });
+      } catch (err) {
+        Notify.create({
+          message: err.response.data.datas,
+          color: 'negative',
+          textColor: 'white',
+          position: 'top-right',
+        });
+      }
+    };
 
-        updateTemplate: function() {
-            this.cleanErrors();
-            if (!this.currentTemplate.name)
-                this.errors.name = $t('msg.nameRequired');
-            
-            if (this.errors.name)
-                return;
+    const deleteTemplate = async templateId => {
+      try {
+        const data = await TemplateService.deleteTemplate(templateId);
+        getTemplates();
+        Notify.create({
+          message: data.data.datas,
+          color: 'positive',
+          textColor: 'white',
+          position: 'top-right',
+        });
+      } catch (err) {
+        Notify.create({
+          message: err.response.data.datas,
+          color: 'negative',
+          textColor: 'white',
+          position: 'top-right',
+        });
+      }
+    };
 
-            TemplateService.updateTemplate(this.templateId, this.currentTemplate)
-            .then(() => {
-                this.getTemplates();
-                this.$refs.editModal.hide();
-                Notify.create({
-                    message: $t('msg.templateUpdatedOk'),
-                    color: 'positive',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-            .catch((err) => {
-                Notify.create({
-                    message: err.response.data.datas,
-                    color: 'negative',
-                    textColor: 'white',
-                    position: 'top-right'
-                })
-            })
-        },
+    const confirmDeleteTemplate = row => {
+      Dialog.create({
+        title: t('msg.confirmSuppression'),
+        message: `${t('template')} «${row.name}» ${t('msg.deleteNotice')}`,
+        ok: { label: t('btn.confirm'), color: 'positive' },
+        cancel: { label: t('btn.cancel'), color: 'negative' },
+      }).onOk(() => deleteTemplate(row._id));
+    };
 
-        deleteTemplate: function(templateId) {
-            TemplateService.deleteTemplate(templateId)
-            .then((data) => {
-                this.getTemplates();
-                Notify.create({
-                    message: data.data.datas,
-                    color: 'positive',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-            .catch((err) => {
-                Notify.create({
-                    message: err.response.data.datas,
-                    color: 'negative',
-                    textColor: 'white',
-                    position: 'top-right'
-                })
-            })
-        },
+    const clone = row => {
+      cleanCurrentTemplate();
+      currentTemplate.name = row.name;
+      templateId.value = row._id;
+    };
 
-        confirmDeleteTemplate: function(row) {
-            Dialog.create({
-                title: $t('msg.confirmSuppression'),
-                message: `${$t('template')} «${row.name}» ${$t('msg.deleteNotice')}`,
-                ok: {label: $t('btn.confirm'), color: 'negative'},
-                cancel: {label: $t('btn.cancel'), color: 'white'}
-            })
-            .onOk(() => this.deleteTemplate(row._id))
-        },
+    const cleanErrors = () => {
+      errors.name = '';
+      errors.file = '';
+    };
 
-        clone: function(row) {
-            this.cleanCurrentTemplate();
-            
-            this.currentTemplate.name = row.name;
-            this.templateId = row._id;
-        },
+    const cleanCurrentTemplate = () => {
+      cleanErrors();
+      currentTemplate.name = '';
+      currentTemplate.file = '';
+      currentTemplate.ext = '';
+      templateId.value = '';
+    };
 
-        cleanErrors: function() {
-            this.errors.name = '';
-            this.errors.file = '';
-        },
+    const handleFile = files => {
+      const file = files[0];
+      const fileReader = new FileReader();
 
-        cleanCurrentTemplate: function() {
-            this.cleanErrors();
-            this.currentTemplate = {
-                name: '',
-                file: '',
-                ext: ''
-            };
-            this.templateId = ''
-        },
+      fileReader.onloadend = () => {
+        currentTemplate.file = fileReader.result.split(',')[1];
+      };
 
-        handleFile: function(files) {
-            var file = files[0];
-            var fileReader = new FileReader();
+      currentTemplate.ext = file.name.split('.').pop();
+      fileReader.readAsDataURL(file);
+    };
 
-            fileReader.onloadend = (e) => {
-                this.currentTemplate.file = fileReader.result.split(",")[1];
-            }
+    const dblClick = (evt, row) => {
+      if (isAllowed('templates:update')) {
+        clone(row);
+        proxy.$refs.editModal.show();
+      }
+    };
 
-            this.currentTemplate.ext = file.name.split('.').pop()
-            fileReader.readAsDataURL(file);
-        },
+    onMounted(() => {
+      getTemplates();
+    });
 
-        dblClick: function(evt, row) {
-            if (this.UserService.isAllowed('templates:update')) {
-                this.clone(row)
-                this.$refs.editModal.show()
-            }     
-        }
-    }
-}
+    return {
+      t,
+      proxy,
+      user,
+      isAllowed,
+      templates,
+      loading,
+      dtHeaders,
+      pagination,
+      rowsPerPageOptions,
+      search,
+      customFilter,
+      errors,
+      currentTemplate,
+      templateId,
+      getTemplates,
+      downloadTemplate,
+      createTemplate,
+      updateTemplate,
+      deleteTemplate,
+      confirmDeleteTemplate,
+      clone,
+      cleanErrors,
+      cleanCurrentTemplate,
+      handleFile,
+      dblClick,
+    };
+  },
+  components: {
+    Breadcrumb,
+  },
+};

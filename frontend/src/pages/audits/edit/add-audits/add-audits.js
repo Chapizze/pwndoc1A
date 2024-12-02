@@ -6,11 +6,15 @@ import Breadcrumb from 'components/breadcrumb'
 import AuditService from '@/services/audit'
 import DataService from '@/services/data'
 import CompanyService from '@/services/company'
-import UserService from '@/services/user'
+import {user} from '@/services/user'
 
-import { $t } from '@/boot/i18n'
+import { useI18n } from 'vue-i18n';
 
 export default {
+    setup: () => {
+        const t = useI18n();
+        return { t, user }
+    },
     props: {
         frontEndAuditState: Number,
         parentState: String,
@@ -18,7 +22,6 @@ export default {
     },
     data: () => {
         return {
-            UserService: UserService,
             // Audits list
             audits: [],
             // Loading state
@@ -31,11 +34,11 @@ export default {
             languages: [],
             // Datatable headers
             dtHeaders: [
-                {name: 'name', label: $t('name'), field: 'name', align: 'left', sortable: true},
-                {name: 'language', label: $t('language'), field: 'language', align: 'left', sortable: true},
-                {name: 'company', label: $t('company'), field: row => (row.company)?row.company.name:'', align: 'left', sortable: true},
-                {name: 'users', label: $t('participants'), align: 'left', sortable: true},
-                {name: 'date', label: $t('date'), field: row => row.createdAt.split('T')[0], align: 'left', sortable: true},
+                {name: 'name', label: t('name'), field: 'name', align: 'left', sortable: true},
+                {name: 'language', label: t('language'), field: 'language', align: 'left', sortable: true},
+                {name: 'company', label: t('company'), field: row => (row.company)?row.company.name:'', align: 'left', sortable: true},
+                {name: 'users', label: t('participants'), align: 'left', sortable: true},
+                {name: 'date', label: t('date'), field: row => row.createdAt.split('T')[0], align: 'left', sortable: true},
                 {name: 'connected', label: '', align: 'left', sortable: false},
                 {name: 'reviews', label: '', align: 'left', sortable: false},
                 {name: 'action', label: '', field: 'action', align: 'left', sortable: false},
@@ -165,7 +168,7 @@ export default {
                 .then(() => {
                     this.audits = this.audits.filter(e => e._id !== audit._id)
                     Notify.create({
-                        message: $t('msg.auditUpdateOk'),
+                        message: t('msg.auditUpdateOk'),
                         color: 'positive',
                         textColor:'white',
                         position: 'top-right'
@@ -212,7 +215,7 @@ export default {
         },
 
         customFilter: function(rows, terms, cols, getCellValue) {
-            var username = this.UserService.user.username.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            var username = user.username.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 
             var nameTerm = (terms.name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
             var languageTerm = (terms.language)? terms.language.toLowerCase(): ""

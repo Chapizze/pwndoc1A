@@ -1,754 +1,697 @@
 import { Notify, Dialog, QSpinnerGears } from 'quasar';
-
 import BasicEditor from 'components/editor';
 import Breadcrumb from 'components/breadcrumb';
-import CvssCalculator from 'components/cvsscalculator'
-import TextareaArray from 'components/textarea-array'
-import CustomFields from 'components/custom-fields'
-import AttachmentService from '@/services/attachment'
+import TextareaArray from 'components/textarea-array';
+import CustomFields from 'components/custom-fields';
+import AttachmentService from '@/services/attachment';
 import AuditService from '@/services/audit';
 import DataService from '@/services/data';
-import UserService from '@/services/user';
 import VulnService from '@/services/vulnerability';
 import Utils from '@/services/utils';
-
-import { $t } from '@/boot/i18n'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick, getCurrentInstance } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
+import _ from 'lodash';
+import settings from '@/boot/settings';
+import { socket } from '@/boot/socketio';
 
 export default {
-    props: {
-        frontEndAuditState: Number,
-        parentState: String,
-        parentApprovals: Array
-    },
-    data: () => {
-        return {
-            finding: {},
-            findingOrig: {},
-            selectedTab: "definition",
-            proofsTabVisited: false,
-            detailsTabVisited: false,
-            vulnTypes: [],
-            AUDIT_VIEW_STATE: Utils.AUDIT_VIEW_STATE,
-            overrideLeaveCheck: false,
-            transitionEnd: true,
-            // Comments
-            fieldHighlighted: "",
-            commentTemp: null,
-            replyTemp: null,
-            hoverReply: null,
-            commentDateOptions: {
-                year: 'numeric',
-                month: 'long',
-                day: '2-digit',
-                hour: 'numeric',
-                minute: '2-digit',
-            },
-            attachments: []
-        }
-    },
+  props: {
+    frontEndAuditState: Number,
+    parentState: String,
+    parentApprovals: Array,
+  },
+  components: {
+    BasicEditor,
+    Breadcrumb,
+    TextareaArray,
+    CustomFields
+  },
+  setup(props) {
+    const { t } = useI18n();
+    const route = useRoute();
+    const router = useRouter();
+    const { proxy } = getCurrentInstance();
 
-    components: {
-        BasicEditor,
-        Breadcrumb,
-        CvssCalculator,
-        TextareaArray,
-        CustomFields
-    },
+    const auditId = ref(route.params.auditId);
+    const findingId = ref(route.params.findingId);
+    const finding = reactive({});
+    const findingOrig = reactive({});
+    const selectedTab = ref("details");
+    const proofsTabVisited = ref(false);
+    const detailsTabVisited = ref(false);
+    const vulnTypes = ref([]);
+    const AUDIT_VIEW_STATE = Utils.AUDIT_VIEW_STATE;
+    const data = reactive({ isAttachement: true, fId: findingId.value });
+    const currentTemplate = reactive({ name: '', file: '', ext: '' });
+    const errors = reactive({ name: '', file: '' });
+    const files = ref(null);
+    const oldPickedFile = ref(null);
+    const vulnCategories = ref([]);
+    const attachments = ref([]);
+    const audit = computed(() => proxy.$parent.$parent.audit);
+    const sectionId = ref(null);
 
-    mounted: function() {
-        this.auditId = this.$route.params.auditId;
-        this.findingId = this.$route.params.findingId;
-        this.getFinding();
-        this.getVulnTypes();
+    const vulnTypesLang = computed(() => vulnTypes.value.filter(type => type.locale === audit.language));
+    const screenshotsSize = computed(() => ((JSON.stringify(uploadedImages.value).length) / 1024).toFixed(2));
+    const overrideLeaveCheck = ref(false);
+    const transitionEnd = ref(true);
+    const fieldHighlighted = ref("");
+    const commentTemp = ref(null);
+    const replyTemp = ref(null);
+    const hoverReply = ref(null);
+    const  commentDateOptions = ref({
+        year: 'numeric',
+        month: 'long',
+        day: '2-digit',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+    
+    const _listener = (e) => {
+      if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) && e.keyCode == 83) {
+        e.preventDefault();
+        if (props.frontEndAuditState === AUDIT_VIEW_STATE.EDIT)
+          updateFinding();
+      }
+    };
 
-        this.$socket.emit('menu', {menu: 'editFinding', finding: this.findingId, room: this.auditId});
+    const getVulnTypes = () => {
+      DataService.getVulnerabilityTypes()
+        .then((data) => {
+          vulnTypes.value = data.data.datas;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    };
 
-        // save on ctrl+s
-        document.addEventListener('keydown', this._listener, false);
+    const cleanFiles = () => {
+      files.value = null;
+    };
 
-        this.$parent.focusedComment = null
-        if (this.$route.params.comment)
-            this.focusComment(this.$route.params.comment)
-    },
+    const getVulnerabilityCategories = () => {
+      DataService.getVulnerabilityCategories()
+        .then((data) => {
+          vulnCategories.value = data.data.datas;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    };
 
-    destroyed: function() {
-        document.removeEventListener('keydown', this._listener, false);
-    },
-
-    beforeRouteLeave (to, from , next) {
-        Utils.syncEditors(this.$refs)
-
-        var displayHighlightWarning = this.displayHighlightWarning()
-
-        if (this.unsavedChanges()) {
-            Dialog.create({
-            title: $t('msg.thereAreUnsavedChanges'),
-            message: $t('msg.doYouWantToLeave'),
-            ok: {label: $t('btn.confirm'), color: 'negative'},
-            cancel: {label: $t('btn.cancel'), color: 'white'},
-            focus: 'cancel'
-            })
-            .onOk(() => next())
-        }
-        else if (displayHighlightWarning) {
-            Dialog.create({
-                title: $t('msg.highlightWarningTitle'),
-                message: `${displayHighlightWarning}</mark>`,
-                html: true,
-                ok: {label: $t('btn.leave'), color: 'negative'},
-                cancel: {label: $t('btn.stay'), color: 'white'},
-            })
-            .onOk(() => next())
-        }
-        else
-            next()
-    },
-
-    beforeRouteUpdate (to, from , next) {
-        Utils.syncEditors(this.$refs)
-
-        var displayHighlightWarning = this.displayHighlightWarning()
-
-        if (this.unsavedChanges()) {
-            Dialog.create({
-            title: $t('msg.thereAreUnsavedChanges'),
-            message: $t('msg.doYouWantToLeave'),
-            ok: {label: $t('btn.confirm'), color: 'negative'},
-            cancel: {label: $t('btn.cancel'), color: 'white'},
-            focus: 'cancel'
-            })
-            .onOk(() => next())
-        }
-        else if (displayHighlightWarning) {
-            Dialog.create({
-                title: $t('msg.highlightWarningTitle'),
-                message: `${displayHighlightWarning}</mark>`,
-                html: true,
-                ok: {label: $t('btn.leave'), color: 'negative'},
-                cancel: {label: $t('btn.stay'), color: 'white'},
-            })
-            .onOk(() => next())
-        }
-        else
-            next()
-    },
-
-    computed: {
-        vulnTypesLang: function() {
-            return this.vulnTypes.filter(type => type.locale === this.$parent.audit.language);
-        },
-
-        screenshotsSize: function() {
-            return ((JSON.stringify(this.uploadedImages).length) / 1024).toFixed(2)
-        }
-    },
-
-    methods: {
-        _listener: function(e) {
-            if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) && e.keyCode == 83) {
-                e.preventDefault();
-                if (this.frontEndAuditState === this.AUDIT_VIEW_STATE.EDIT)
-                    this.updateFinding();
-            }
-        },
-
-        // Get Vulnerabilities types
-        getVulnTypes: function() {
-            DataService.getVulnerabilityTypes()
-            .then((data) => {
-                this.vulnTypes = data.data.datas;
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-        },
-
-        // Get Finding
-        getFinding: function() {
-            AuditService.getFinding(this.auditId, this.findingId)
-            .then((data) => {
-                this.finding = data.data.datas;
-                if (this.finding.customFields && // For retrocompatibility with customField reference instead of object
-                    this.finding.customFields.length > 0 && 
-                    typeof (this.finding.customFields[0].customField) === 'string') 
-                    this.finding.customFields = Utils.filterCustomFields('finding', this.finding.category, this.$parent.customFields, this.finding.customFields, this.$parent.audit.language)
-                if (this.finding.paragraphs.length > 0 && !this.finding.poc)
-                    this.finding.poc = this.convertParagraphsToHTML(this.finding.paragraphs)
-
-                this.$nextTick(() => {
-                    Utils.syncEditors(this.$refs)
-                    this.findingOrig = this.$_.cloneDeep(this.finding); 
-                })
-            })
-            .catch((err) => {
-                if (!err.response)
-                    console.log(err)
-                else if (err.response.status === 403)
-                    this.$router.push({name: '403', params: {error: err.response.data.datas}})
-                else if (err.response.status === 404)
-                    this.$router.push({name: '404', params: {error: err.response.data.datas}})
-            })
-        },
-
-        // For retro compatibility with old paragraphs
-        convertParagraphsToHTML: function(paragraphs) {
-            var result = ""
-            paragraphs.forEach(p => {
-                result += `<p>${p.text}</p>`
-                if (p.images.length > 0) {
-                    p.images.forEach(img => {
-                        result += `<img src="${img.image}" alt="${img.caption}" />`
-                    })
-                }
-            })
-            return result
-        },
-
-        // Update Finding
-        updateFinding: function() {
-            Utils.syncEditors(this.$refs)
-            this.$nextTick(() => {
-                var customFieldsEmpty = this.$refs.customfields && this.$refs.customfields.requiredFieldsEmpty()
-                var defaultFieldsEmpty = this.requiredFieldsEmpty()
-                if (customFieldsEmpty || defaultFieldsEmpty) {
-                    Notify.create({
-                        message: $t('msg.fieldRequired'),
-                        color: 'negative',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                    return
-                }
-                
-                AuditService.updateFinding(this.auditId, this.findingId, this.finding)
-                .then(() => {
-                    this.findingOrig = this.$_.cloneDeep(this.finding);
-                    Notify.create({
-                        message: $t('msg.findingUpdateOk'),
-                        color: 'positive',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                    this.getFinding()
-                })
-                .catch((err) => {
-                    Notify.create({
-                        message: err.response.data.datas,
-                        color: 'negative',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                })
-            })
-        },
-
-        deleteFinding: function() {
-            Dialog.create({
-                title: $t('msg.deleteFindingConfirm'),
-                message: $t('msg.deleteFindingNotice'),
-                ok: {label: $t('btn.confirm'), color: 'negative'},
-                cancel: {label: $t('btn.cancel'), color: 'white'}
-            })
-            .onOk(() => {
-                AuditService.deleteFinding(this.auditId, this.findingId)
-                .then(() => {
-                    Notify.create({
-                        message: $t('msg.findingDeleteOk'),
-                        color: 'positive',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                    this.findingOrig = this.finding
-                    this.overrideLeaveCheck = true
-                    var currentIndex = this.$parent.audit.findings.findIndex(e => e._id === this.findingId)
-                    if (this.$parent.audit.findings.length === 1)
-                        this.$router.push(`/audits/${this.$parent.auditId}/findings/add`)
-                    else if (currentIndex === this.$parent.audit.findings.length - 1)
-                        this.$router.push(`/audits/${this.$parent.auditId}/findings/${this.$parent.audit.findings[currentIndex - 1]._id}`)
-                    else
-                        this.$router.push(`/audits/${this.$parent.auditId}/findings/${this.$parent.audit.findings[currentIndex + 1]._id}`)
-                })
-                .catch((err) => {
-                    Notify.create({
-                        message: err.response.data.datas,
-                        color: 'negative',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                })
-            })
-        },
-
-         // Backup Finding to vulnerability database
-        backupFinding: function() {
-            Utils.syncEditors(this.$refs)
-            VulnService.backupFinding(this.$parent.audit.language, this.finding)
-            .then((data) => {
-                Notify.create({
-                    message: data.data.datas,
-                    color: 'positive',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-            .catch((err) => {
-                Notify.create({
-                    message: err.response.data.datas,
-                    color: 'negative',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-        },
-
-        syncEditors: function() {
-            this.transitionEnd = false
-            Utils.syncEditors(this.$refs)
-        },
-
-        updateOrig: function() {
-            this.transitionEnd = true
-            if (this.selectedTab === 'proofs' && !this.proofsTabVisited){
-                Utils.syncEditors(this.$refs)
-                this.findingOrig.poc = this.finding.poc
-                this.proofsTabVisited = true
-            }
-            else if (this.selectedTab === 'details' && !this.detailsTabVisited){
-                Utils.syncEditors(this.$refs)
-                this.findingOrig.remediation = this.finding.remediation
-                this.detailsTabVisited = true
-            }
-        },
-
-        toggleSplitView: function() {
-            this.$parent.retestSplitView = !this.$parent.retestSplitView
-            if (this.$parent.retestSplitView) {
-                this.$parent.retestSplitRatio = 50
-                this.$parent.retestSplitLimits = [40, 60]
-            }
-            else {
-                this.$parent.retestSplitRatio = 100
-                this.$parent.retestSplitLimits = [100, 100]
-            }
-        },
-
-        // *** Comments Handling ***
-
-        toggleCommentView: function() {
-            Utils.syncEditors(this.$refs)
-            this.$parent.commentMode = !this.$parent.commentMode
-            if (this.$parent.commentMode) {
-                this.$parent.commentSplitRatio = 80
-                this.$parent.commentSplitLimits = [80, 80]
-            }
-            else {
-                this.$parent.commentSplitRatio = 100
-                this.$parent.commentSplitLimits = [100, 100]
-            }
-        },
-
-        focusComment: function(comment) {
-            if (
-                (!!this.$parent.editComment && this.$parent.editComment !== comment._id) || 
-                (this.$parent.replyingComment && !comment.replyTemp) || 
-                (this.$parent.focusedComment === comment._id)
-            )
-                return
-
-            if (comment.findingId && this.findingId !== comment.findingId) {
-                this.$router.replace({name: 'editFinding', params: {
-                    auditId: this.auditId, 
-                    findingId: comment.findingId, 
-                    comment: comment
-                }})
-                return
-            }
-
-            if (comment.sectionId && this.sectionId !== comment.sectionId) {
-                this.$router.replace({name: 'editSection', params: {
-                    auditId: this.auditId, 
-                    sectionId: comment.sectionId, 
-                    comment: comment
-                }})
-                return
-            }
-
-            let definitionFields = ["titleField", "typeField", "descriptionField", "observationField", "referencesField"]
-            let detailsFields = ["affectedField", "cvssField", "remediationDifficultyField", "priorityField", "remediationField"]
-
-            // Go to definition tab and scrollTo field
-            if (this.selectedTab !== 'definition' && (definitionFields.includes(comment.fieldName) || comment.fieldName.startsWith('field-'))) {
-                this.selectedTab = "definition"
-            }
-            else if (this.selectedTab !== 'poc' && comment.fieldName === 'pocField') {
-                this.selectedTab = "proofs"
-            }
-            else if (this.selectedTab !== 'details' && detailsFields.includes(comment.fieldName)) {
-                this.selectedTab = "details"
-            }
-            let checkCount = 0
-            const intervalId = setInterval(() => {
-                checkCount++
-                if (document.getElementById(comment.fieldName)) {
-                    clearInterval(intervalId)
-                    this.$nextTick(() => {
-                        document.getElementById(comment.fieldName).scrollIntoView({block: "center"})
-                    })
-                }
-                else if (checkCount >= 10) {
-                    clearInterval(intervalId)
-                }
-            }, 100)
-
-            this.fieldHighlighted = comment.fieldName
-            this.$parent.focusedComment = comment._id
-
-        },
-
-        createComment: function(fieldName) {
-            let comment = {
-                _id: 42,
-                findingId: this.findingId,
-                fieldName: fieldName,
-                authorId: UserService.user.id,
-                author: {
-                    firstname: UserService.user.firstname,
-                    lastname: UserService.user.lastname
-                },
-                text: "" 
-            }
-            if (this.$parent.editComment === 42){
-                this.$parent.focusedComment = null
-                this.$parent.audit.comments.pop()
-            }
-            this.fieldHighlighted = fieldName
-            this.$parent.audit.comments.push(comment)
-            this.$parent.editComment = 42
-            this.focusComment(comment)
-        },
-
-        cancelEditComment: function(comment) {
-            this.$parent.editComment = null
-            if (comment._id === 42) {
-                this.$parent.audit.comments.pop()
-                this.fieldHighlighted = ""
-            }
-        },
-
-        deleteComment: function(comment) {
-            AuditService.deleteComment(this.auditId, comment._id)
-            .then(() => {
-                if (this.$parent.focusedComment === comment._id)
-                    this.fieldHighlighted = ""
-            })
-            .catch((err) => {
-                Notify.create({
-                    message: err.response.data.datas,
-                    color: 'negative',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-        },
-
-        updateComment: function(comment) {
-            if (comment.textTemp)
-                comment.text = comment.textTemp
-            if (comment.replyTemp){
-                comment.replies.push({
-                    author: UserService.user.id,
-                    text: comment.replyTemp
-                })
-            }
-            if (comment._id === 42) { 
-                AuditService.createComment(this.auditId, comment)
-                .then((res) => {
-                    let newComment = res.data.datas
-                    this.$parent.editComment = null
-                    this.$parent.focusedComment = newComment._id
-                })
-                .catch((err) => {
-                    Notify.create({
-                        message: err.response.data.datas,
-                        color: 'negative',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                })
-            }
-            else {
-                
-                AuditService.updateComment(this.auditId, comment)
-                .then(() => {
-                    this.$parent.editComment = null
-                    this.$parent.editReply = null
-                })
-                .catch((err) => {
-                    Notify.create({
-                        message: err.response.data.datas,
-                        color: 'negative',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                })
-            }
-        },
-
-        removeReplyFromComment: function(reply, comment) {
-            comment.replies = comment.replies.filter(e => e._id !== reply._id)
-            this.updateComment(comment)
-        },
-
-        displayComment: function(comment) {
-            let response = true
-            if ((this.$parent.commentsFilter === 'active' && comment.resolved)|| (this.$parent.commentsFilter === 'resolved' && !comment.resolved))
-                response = false
-            return response
-        },
-
-        numberOfFilteredComments: function() {
-            let count = this.$parent.audit.comments.length
-            if (this.$parent.commentsFilter === 'active')
-                count = this.$parent.audit.comments.filter(e => !e.resolved).length
-            else if (this.$parent.commentsFilter === 'resolved')
-                count = this.$parent.audit.comments.filter(e => e.resolved).length
-            
-            if (count === 1)
-                return `${count} ${$t('item')}`
-            else
-                return `${count} ${$t('items')}`
-        },
-
-        unsavedChanges: function() {
-            if (this.overrideLeaveCheck)
-                return false
-
-            if (this.finding.title !== this.findingOrig.title)
-                return true
-            if ((this.finding.vulnType || this.findingOrig.vulnType) && this.finding.vulnType !== this.findingOrig.vulnType)
-                return true
-            if ((this.finding.description || this.findingOrig.description) && this.finding.description !== this.findingOrig.description)
-                return true
-            if ((this.finding.observation || this.findingOrig.observation) && this.finding.observation !== this.findingOrig.observation)
-                return true
-            if (!this.$_.isEqual(this.finding.references, this.findingOrig.references))
-                return true
-            if (!this.$_.isEqual(this.finding.customFields, this.findingOrig.customFields))
-                return true
-
-            if ((this.finding.poc || this.findingOrig.poc) && this.finding.poc !== this.findingOrig.poc)
-                return true
-            
-            if ((this.finding.scope || this.findingOrig.scope) && this.finding.scope !== this.findingOrig.scope)
-                return true
-            if ((this.finding.cvssv3 || this.findingOrig.cvssv3) && this.finding.cvssv3 !== this.findingOrig.cvssv3)
-                return true
-            if ((this.finding.remediationComplexity || this.findingOrig.remediationComplexity) && this.finding.remediationComplexity !== this.findingOrig.remediationComplexity)
-                return true
-            if ((this.finding.priority || this.findingOrig.priority) && this.finding.priority !== this.findingOrig.priority)
-                return true
-            if ((this.finding.remediation || this.findingOrig.remediation) && this.finding.remediation !== this.findingOrig.remediation)
-                return true
-
-            if (this.finding.status !== this.findingOrig.status)
-                return true
-            
-            if ((this.finding.retestStatus || this.findingOrig.retestStatus) && this.finding.retestStatus !== this.findingOrig.retestStatus)
-                return true
-            if ((this.finding.retestDescription || this.findingOrig.retestDescription) && this.finding.retestDescription !== this.findingOrig.retestDescription)
-                return true
-
-            return false
-        },
-
-        displayHighlightWarning: function() {
-            if (this.overrideLeaveCheck)
-                return null
-
-            if (!this.$settings.report.enabled || !this.$settings.report.public.highlightWarning)
-                return null
-
-            var matchString = `(<mark data-color="${this.$settings.report.public.highlightWarningColor}".+?>.+?)</mark>`
-            var regex = new RegExp(matchString)
-            var result = ""
-
-            result = regex.exec(this.finding.description)
-            if (result && result[1])
-                return (result[1].length > 119) ? "<b>Description</b><br/>"+result[1].substring(0,119)+'...' : "<b>Description</b><br/>"+result[1]
-            result = regex.exec(this.finding.observation)
-            if (result && result[1])
-                return (result[1].length > 119) ? "<b>Observation</b><br/>"+result[1].substring(0,119)+'...' : "<b>Observation</b><br/>"+result[1]
-            result = regex.exec(this.finding.poc)
-            if (result && result[1])
-                return (result[1].length > 119) ? "<b>Proofs</b><br/>"+result[1].substring(0,119)+'...' : "<b>Proofs</b><br/>"+result[1]
-            result = regex.exec(this.finding.remediation)
-            if (result && result[1])
-                return (result[1].length > 119) ? "<b>Remediation</b><br/>"+result[1].substring(0,119)+'...' : "<b>Remediation</b><br/>"+result[1]
-            
-
-            if (this.finding.customFields && this.finding.customFields.length > 0) {
-                for (let i in this.finding.customFields) {
-                    let field = this.finding.customFields[i]
-                    if (field.customField && field.text && field.customField.fieldType === "text") {
-                        result = regex.exec(field.text)
-                        if (result && result[1])
-                            return (result[1].length > 119) ? `<b>${field.customField.label}</b><br/>`+result[1].substring(0,119)+'...' : `<b>${field.customField.label}</b><br/>`+result[1]
-                    }
-                }
-            }
-            
-            return null
-        },
-
-        requiredFieldsEmpty: function() {
-            var hasErrors = false
-
-            if (this.$refs.titleField) {
-                this.$refs.titleField.validate()
-                hasErrors = hasErrors || this.$refs.titleField.hasError
-            }
-            if (this.$refs.typeField) {
-                this.$refs.typeField.validate()
-                hasErrors = hasErrors || this.$refs.typeField.hasError
-            }
-            if (this.$refs.descriptionField) {
-                this.$refs.descriptionField.validate()
-                hasErrors = hasErrors || this.$refs.descriptionField.hasError
-            }
-            if (this.$refs.observationField) {
-                this.$refs.observationField.validate()
-                hasErrors = hasErrors || this.$refs.observationField.hasError
-            }
-            if (this.$refs.referencesField) {
-                this.$refs.referencesField.validate()
-                hasErrors = hasErrors || this.$refs.referencesField.hasError
-            }
-            if (this.$refs.pocField) {
-                this.$refs.pocField.validate()
-                hasErrors = hasErrors || this.$refs.pocField.hasError
-            }
-            if (this.$refs.affectedField) {
-                this.$refs.affectedField.validate()
-                hasErrors = hasErrors || this.$refs.affectedField.hasError
-            }
-            if (this.$refs.remediationDifficultyField) {
-                this.$refs.remediationDifficultyField.validate()
-                hasErrors = hasErrors || this.$refs.remediationDifficultyField.hasError
-            }
-            if (this.$refs.priorityField) {
-                this.$refs.priorityField.validate()
-                hasErrors = hasErrors || this.$refs.priorityField.hasError
-            }
-            if (this.$refs.remediationField) {
-                this.$refs.remediationField.validate()
-                hasErrors = hasErrors || this.$refs.remediationField.hasError
-            }
-
-            return hasErrors
-        },
-
-        updateFiles(newFiles) {
-            this.files = newFiles;
-            const promises = this.files.map((file) => {
-                return new Promise((resolve, reject) => {
-                    const downloadNotif = Notify.create({
-                        spinner: QSpinnerGears,
-                        message: 'Uploading ' + file.name,
-                        color: "blue",
-                        timeout: 0,
-                        group: false
-                    });
-                    let attachment = {};
-                    attachment.name = file.name;
-                    let fileReader = new FileReader();
-                    fileReader.readAsDataURL(file);
-                    fileReader.onloadend = (e) => {
-                        attachment.value = fileReader.result.split(',')[1];
-                        resolve({ attachment, downloadNotif });
-                    };
-                    fileReader.onerror = (e) => {
-                        reject(e);
-                    };
-                });
+    const downloadAttachement = (index) => {
+      const downloadNotif = Notify.create({
+        spinner: QSpinnerGears,
+        message: 'Generating the Report',
+        color: "blue",
+        timeout: 0,
+        group: false
+      });
+      if (finding.externalAttachement[index]) {
+        var file = finding.externalAttachement[index];
+        var blob = new Blob([Buffer.from(file.value, 'base64')], { type: "application/octet-stream" });
+        var link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.remove();
+        downloadNotif({
+          icon: 'done',
+          spinner: false,
+          message: 'Attachment successfully downloaded',
+          color: 'green',
+          timeout: 2500
+        });
+      } else if (finding.attachments[index]) {
+        AttachmentService.getAttachment(auditId.value, finding.attachments[index]._id)
+          .then((data) => {
+            var file = data.data.datas;
+            var blob = new Blob([Buffer.from(file.value, 'base64')], { type: "application/octet-stream" });
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = file.name;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            downloadNotif({
+              icon: 'done',
+              spinner: false,
+              message: 'Attachment successfully downloaded',
+              color: 'green',
+              timeout: 2500
             });
-        
-            Promise.all(promises).then((results) => {
-                results.forEach(({ attachment, downloadNotif }) => {
-                    this.finding.attachments.push(attachment);
-                    downloadNotif({
-                        icon: 'done',
-                        spinner: false,
-                        message: attachment.name + ' successfully uploaded',
-                        color: 'green',
-                        timeout: 3000
-                    });
-                });
-                this.updateFinding();
-            }).catch((error) => {
-                console.error('Error during file upload:', error);
-            });
-        
-            this.files = null;
-        },
-        deleteAttachement(index){
-            AttachmentService.deleteAttachment(this.auditId, this.finding.attachments[index]._id)
-            .then(msg => {
-                this.finding.attachments.splice(index, 1)
-                this.updateFinding()
-                this.printPositiveMessage("Attachment succesfully deleted")
-            })
-            
-        },
-        downloadAttachement (index) {
-            const downloadNotif = Notify.create({
-                spinner: QSpinnerGears,
-                message: 'Generating the Report',
-                color: "blue",
-                timeout: 0,
-                group: false
-            })
-            AttachmentService.getAttachment(this.auditId, this.finding.attachments[index]._id)
-            .then((data) => {
-                var file = data.data.datas
-                var blob = new Blob([Buffer.from(file.value, 'base64')], {type: "application/octet-stream"});
-                var link = document.createElement('a');
-                link.href = window.URL.createObjectURL(blob);
-                link.download = file.name
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                downloadNotif({
-                    icon: 'done',
-                    spinner: false,
-                    message: 'Attachment successfully downloaded',
-                    color: 'green',
-                    timeout: 2500
-                })
-            })
-            .catch((err) => {
-                console.log(err);
-                this.printNegativeMessage('Error occured')
-            })
-        },    
-        printPositiveMessage: function (message) {
-            Notify.create({
-                message: $t(message),
-                type: "positive",
-                position: 'top-right',
-                iconSize: "64px",
-                iconColor: "white",
-                timeout: "1000"
-            })
-        },
-        printNegativeMessage: function (message) {
-            Notify.create({
-                message: $t(message),
-                type: "negative",
-                position: 'top-right',
-                iconSize: "100px",
-                iconColor: "white",
-                timeout: "5000"
-            })
+          });
+      } else {
+        printNegativeMessage("No attachment to download");
+      }
+    };
+
+    const printPositiveMessage = (message) => {
+      Notify.create({
+        message: t(message),
+        type: "positive",
+        position: 'top-right',
+        iconSize: "64px",
+        iconColor: "white",
+        timeout: "1000"
+      });
+    };
+
+    const printNegativeMessage = (message) => {
+      Notify.create({
+        message: t(message),
+        type: "negative",
+        position: 'top-right',
+        iconSize: "100px",
+        iconColor: "white",
+        timeout: "5000"
+      });
+    };
+
+    const deleteAttachement = (index) => {
+      AttachmentService.deleteAttachment(auditId.value, finding.attachments[index]._id)
+        .then(msg => {
+          finding.attachments.splice(index, 1);
+          updateFinding();
+          printPositiveMessage("Attachment succesfully deleted");
+        });
+    };
+
+    const updateFiles = (newFiles) => {
+      files.value = newFiles;
+      const promises = files.value.map((file) => {
+        return new Promise((resolve, reject) => {
+          const downloadNotif = Notify.create({
+            spinner: QSpinnerGears,
+            message: 'Uploading ' + file.name,
+            color: "blue",
+            timeout: 0,
+            group: false
+          });
+          let attachment = {};
+          attachment.name = file.name;
+          let fileReader = new FileReader();
+          fileReader.readAsDataURL(file);
+          fileReader.onloadend = (e) => {
+            attachment.value = fileReader.result.split(',')[1];
+            resolve({ attachment, downloadNotif });
+          };
+          fileReader.onerror = (e) => {
+            reject(e);
+          };
+        });
+      });
+
+      Promise.all(promises).then((results) => {
+        results.forEach(({ attachment, downloadNotif }) => {
+          finding.attachments.push(attachment);
+          downloadNotif({
+            icon: 'done',
+            spinner: false,
+            message: attachment.name + ' successfully uploaded',
+            color: 'green',
+            timeout: 3000
+          });
+        });
+        updateFinding();
+      }).catch((error) => {
+        console.error('Error during file upload:', error);
+      });
+
+      files.value = null;
+    };
+
+    const handleFile = (files) => {
+      var file = files[0];
+      var fileReader = new FileReader();
+
+      fileReader.onloadend = (e) => {
+        currentTemplate.file = fileReader.result.split(",")[1];
+      };
+      currentTemplate.ext = file.name.split('.').pop();
+      fileReader.readAsDataURL(file);
+    };
+
+    const getFinding = () => {
+      AuditService.getFinding(auditId.value, findingId.value)
+        .then((data) => {
+          Object.assign(finding, data.data.datas);
+          if (finding.customFields && // For retrocompatibility with customField reference instead of object
+            finding.customFields.length > 0 &&
+            typeof (finding.customFields[0].customField) === 'string')
+            finding.customFields = Utils.filterCustomFields('finding', finding.category, props.parentCustomFields, finding.customFields, audit.language);
+          if (finding.paragraphs.length > 0 && !finding.request)
+            finding.poc = convertParagraphsToHTML(finding.paragraphs);
+
+          nextTick(() => {
+            Utils.syncEditors(proxy.$refs);
+            Object.assign(findingOrig, _.cloneDeep(finding));
+          });
+        })
+        .catch((err) => {
+          if (!err.response)
+            console.log(err);
+          else if (err.response.status === 403)
+            router.push({ name: '403', params: { error: err.response.data.datas } });
+          else if (err.response.status === 404)
+            router.push({ name: '404', params: { error: err.response.data.datas } });
+        });
+    };
+
+    const convertParagraphsToHTML = (paragraphs) => {
+      var result = "";
+      paragraphs.forEach(p => {
+        result += `<p>${p.text}</p>`;
+        if (p.images.length > 0) {
+          p.images.forEach(img => {
+            result += `<img src="${img.image}" alt="${img.caption}" />`;
+          });
         }
+      });
+      return result;
+    };
+
+    const updateFinding = () => {
+      Utils.syncEditors(proxy.$refs);
+      nextTick(() => {
+        var customFieldsEmpty = proxy.$refs.customfields && proxy.$refs.customfields.requiredFieldsEmpty()
+        var defaultFieldsEmpty = proxy.requiredFieldsEmpty()
+        if (customFieldsEmpty || defaultFieldsEmpty) {
+            Notify.create({
+                message: t('msg.fieldRequired'),
+                color: 'negative',
+                textColor:'white',
+                position: 'top-right'
+            })
+            return
+        }
+        AuditService.updateFinding(auditId.value, findingId.value, finding)
+        .then(() => {
+            Object.assign(findingOrig, _.cloneDeep(finding));
+            printPositiveMessage(t('msg.findingUpdateOk'));
+
+            //Update finding.attachments with IDs from the response to avoid duplicates
+            getFinding();
+        })
+        .catch((err) => {
+            printNegativeMessage(err.response.data.datas);
+        });
+    });
     }
+
+    const deleteFinding = () => {
+      Dialog.create({
+        title: t('msg.deleteFindingConfirm'),
+        message: t('msg.deleteFindingNotice'),
+        ok: { label: t('btn.confirm'), color: 'positive' },
+        cancel: { label: t('btn.cancel'), color: 'negative' }
+      })
+        .onOk(() => {
+            AuditService.deleteFinding(auditId.value, findingId.value)
+              .then(() => {
+                Notify.create({
+                  message: t('msg.findingDeleteOk'),
+                  color: 'positive',
+                  textColor: 'white',
+                  position: 'top-right'
+                });
+                Object.assign(findingOrig, finding);
+                var currentIndex = audit.value.findings.findIndex(e => e._id === findingId.value);
+                if (audit.value.findings.length === 1)
+                  router.push(`/audits/${audit.value._id}/findings/add`);
+                else if (currentIndex === audit.value.findings.length - 1)
+                  router.push(`/audits/${audit.value._id}/findings/${audit.value.findings[currentIndex - 1]._id}`);
+                
+                else 
+                  router.push(`/audits/${audit.value._id}/findings/${audit.value.findings[currentIndex + 1]._id}`);
+                
+              })
+              .catch((err) => {
+                Notify.create({
+                  message: err.response.data.datas,
+                  color: 'negative',
+                  textColor: 'white',
+                  position: 'top-right'
+                });
+              });
+        });
+    };
+
+    const backupFinding = () => {
+      Utils.syncEditors(proxy.$refs);
+      VulnService.backupFinding('eng', finding)
+        .then((data) => {
+          Notify.create({
+            message: data.data.datas,
+            color: 'positive',
+            textColor: 'white',
+            position: 'top-right'
+          });
+        })
+        .catch((err) => {
+          Notify.create({
+            message: err.response.data.datas,
+            color: 'negative',
+            textColor: 'white',
+            position: 'top-right'
+          });
+        });
+    };
+
+    const syncEditors = () => {
+        Utils.syncEditors(proxy.$refs);
+    };
+
+    const updateOrig = () => {
+        if (selectedTab.value === 'proofs' && !proofsTabVisited.value) {
+        Utils.syncEditors(proxy.$refs);
+        findingOrig.request = finding.request;
+        proofsTabVisited.value = true;
+      } else if (selectedTab.value === 'details' && !detailsTabVisited.value) {
+        Utils.syncEditors(proxy.$refs);
+        findingOrig.remediationDetails = finding.remediationDetails;
+        findingOrig.issueDetails = finding.issueDetails;
+        detailsTabVisited.value = true;
+      }
+    };
+    const toggleSplitView = () =>  {
+        proxy.$parent.retestSplitView = !proxy.$parent.retestSplitView
+        if (proxy.$parent.retestSplitView) {
+            proxy.$parent.retestSplitRatio = 50
+            proxy.$parent.retestSplitLimits = [40, 60]
+        }
+        else {
+            proxy.$parent.retestSplitRatio = 100
+            proxy.$parent.retestSplitLimits = [100, 100]
+        }
+    };
+
+    // *** Comments Handling ***
+
+    const toggleCommentView = () => {
+        Utils.syncEditors(proxy.$refs)
+        proxy.$parent.commentMode = !proxy$parent.commentMode
+        if (proxy.$parent.commentMode) {
+            proxy.$parent.commentSplitRatio = 80
+            proxy.$parent.commentSplitLimits = [80, 80]
+        }
+        else {
+            proxy.$parent.commentSplitRatio = 100
+            proxy.$parent.commentSplitLimits = [100, 100]
+        }
+    };
+
+    const focusComment = (comment) => {
+        if (
+            (!!proxy.$parent.editComment && proxy.$parent.editComment !== comment._id) || 
+            (proxy.$parent.replyingComment && !comment.replyTemp) || 
+            (proxy.$parent.focusedComment === comment._id)
+        )
+            return
+
+        if (comment.findingId && findingId.value !== comment.findingId) {
+            proxy.$router.replace({name: 'editFinding', params: {
+                auditId: auditId.value, 
+                findingId: comment.findingId, 
+                comment: comment
+            }})
+            return
+        }
+
+        if (comment.sectionId && sectionId.value !== comment.sectionId) {
+            this.$router.replace({name: 'editSection', params: {
+                auditId: this.auditId, 
+                sectionId: comment.sectionId, 
+                comment: comment
+            }})
+            return
+        }
+
+        let definitionFields = ["titleField", "typeField", "descriptionField", "observationField", "referencesField"]
+        let detailsFields = ["affectedField", "cvssField", "remediationDifficultyField", "priorityField", "remediationField"]
+
+        // Go to definition tab and scrollTo field
+        if (this.selectedTab !== 'definition' && (definitionFields.includes(comment.fieldName) || comment.fieldName.startsWith('field-'))) {
+            this.selectedTab = "definition"
+        }
+        else if (this.selectedTab !== 'poc' && comment.fieldName === 'pocField') {
+            this.selectedTab = "proofs"
+        }
+        else if (this.selectedTab !== 'details' && detailsFields.includes(comment.fieldName)) {
+            this.selectedTab = "details"
+        }
+        let checkCount = 0
+        const intervalId = setInterval(() => {
+            checkCount++
+            if (document.getElementById(comment.fieldName)) {
+                clearInterval(intervalId)
+                this.$nextTick(() => {
+                    document.getElementById(comment.fieldName).scrollIntoView({block: "center"})
+                })
+            }
+            else if (checkCount >= 10) {
+                clearInterval(intervalId)
+            }
+        }, 100)
+
+        this.fieldHighlighted = comment.fieldName
+        this.$parent.focusedComment = comment._id
+
+    };
+
+    const createComment = (fieldName) => {
+        let comment = {
+            _id: 42,
+            findingId: findingId.value,
+            fieldName: fieldName,
+            authorId: user.value.id,
+            author: {
+                firstname: user.value.firstname,
+                lastname: user.value.lastname
+            },
+            text: "" 
+        }
+        if (proxy.$parent.editComment === 42){
+            proxy.$parent.focusedComment = null
+            proxy.$parent.audit.comments.pop()
+        }
+        proxy.fieldHighlighted = fieldName
+        proxy.$parent.audit.comments.push(comment)
+        proxy.$parent.editComment = 42
+        proxy.focusComment(comment)
+    };
+
+
+    const cancelEditComment = (comment) => {
+        proxy.$parent.editComment = null
+        if (comment._id === 42) {
+            proxy.$parent.audit.comments.pop()
+            fieldHighlighted = ""
+        }
+    };
+
+    const deleteComment =  (comment) => {
+        AuditService.deleteComment(auditId.value, comment._id)
+        .then(() => {
+            if (proxy.$parent.focusedComment === comment._id)
+                fieldHighlighted = ""
+        })
+        .catch((err) => {
+            Notify.create({
+                message: err.response.data.datas,
+                color: 'negative',
+                textColor:'white',
+                position: 'top-right'
+            })
+        })
+    };
+
+    const updateComment = (comment) => {
+        if (comment.textTemp)
+            comment.text = comment.textTemp
+        if (comment.replyTemp){
+            comment.replies.push({
+                author: user.value.id,
+                text: comment.replyTemp
+            })
+        }
+        if (comment._id === 42) { 
+            AuditService.createComment(auditId.value, comment)
+            .then((res) => {
+                let newComment = res.data.datas
+                proxy.$parent.editComment = null
+                proxy.$parent.focusedComment = newComment._id
+            })
+            .catch((err) => {
+                Notify.create({
+                    message: err.response.data.datas,
+                    color: 'negative',
+                    textColor:'white',
+                    position: 'top-right'
+                })
+            })
+        }
+        else {
+            
+            AuditService.updateComment(auditId.value, comment)
+            .then(() => {
+                proxy.$parent.editComment = null
+                proxy.$parent.editReply = null
+            })
+            .catch((err) => {
+                Notify.create({
+                    message: err.response.data.datas,
+                    color: 'negative',
+                    textColor:'white',
+                    position: 'top-right'
+                })
+            })
+        }
+    };
+
+    const removeReplyFromComment = (reply, comment) => {
+        comment.replies = comment.replies.filter(e => e._id !== reply._id)
+        updateComment(comment)
+    };
+
+    const displayComment = (comment) => {
+        let response = true
+        if ((proxy.$parent.commentsFilter === 'active' && comment.resolved)|| (proxy.$parent.commentsFilter === 'resolved' && !comment.resolved))
+            response = false
+        return response
+    };
+
+    const numberOfFilteredComments = () => {
+        let count = proxy.$parent.audit.comments.length
+        if (proxy.$parent.commentsFilter === 'active')
+            count = proxy.$parent.audit.comments.filter(e => !e.resolved).length
+        else if (proxy.$parent.commentsFilter === 'resolved')
+            count = proxy.$parent.audit.comments.filter(e => e.resolved).length
+        
+        if (count === 1)
+            return `${count} ${$t('item')}`
+        else
+            return `${count} ${$t('items')}`
+    };
+
+    const unsavedChanges = () => {
+      if (finding.title !== findingOrig.title)
+        return true;
+      if ((finding.vulnType || findingOrig.vulnType) && finding.vulnType !== findingOrig.vulnType)
+        return true;
+      if ((finding.issueBackground || findingOrig.issueBackground) && finding.issueBackground !== findingOrig.issueBackground)
+        return true;
+      if ((finding.CvssScoreAma || findingOrig.CvssScoreAma) && finding.CvssScoreAma !== findingOrig.CvssScoreAma)
+        return true;
+      if (!_.isEqual(finding.remediationBackground, findingOrig.remediationBackground))
+        return true;
+      if (!_.isEqual(finding.customFields, findingOrig.customFields))
+        return true;
+      if ((finding.request || findingOrig.request) && finding.request !== findingOrig.request)
+        return true;
+      if ((finding.response || findingOrig.response) && finding.response !== findingOrig.response)
+        return true;
+      if ((finding.cvssv3 || findingOrig.cvssv3) && finding.cvssv3 !== findingOrig.cvssv3)
+        return true;
+      if ((finding.urgency || findingOrig.urgency) && finding.urgency !== findingOrig.urgency)
+        return true;
+      if ((finding.severity || findingOrig.severity) && finding.severity !== findingOrig.severity)
+        return true;
+      if ((finding.remediationDetails || findingOrig.remediationDetails) && finding.remediationDetails !== findingOrig.remediationDetails)
+        return true;
+      if ((finding.issueDetails || findingOrig.issueDetails) && finding.issueDetails !== findingOrig.issueDetails)
+        return true;
+      if (finding.status !== findingOrig.status)
+        return true;
+
+      return false;
+    };
+
+    onMounted(() => {
+      getFinding();
+      getVulnerabilityCategories();
+      socket.emit('menu', { menu: 'editFinding', finding: findingId.value, room: auditId.value });
+      selectedTab.value = 'details';
+      syncEditors();
+      updateOrig();
+      detailsTabVisited.value = true;
+      selectedTab.value = 'definition';
+
+      // save on ctrl+s
+      document.addEventListener('keydown', _listener, false);
+      proxy.$parent.focusedComment = null
+      if (proxy.$route.params.comment)
+          proxy.focusComment(proxy.$route.params.comment)
+    });
+
+    onBeforeUnmount(() => {
+      document.removeEventListener('keydown', _listener, false);
+    });
+
+    watch(() => route.params, (newParams, oldParams) => {
+      if (unsavedChanges()) {
+        Dialog.create({
+          title: t('msg.thereAreUnsavedChanges'),
+          message: t('msg.doYouWantToLeave'),
+          ok: { label: t('btn.confirm'), color: 'negative' },
+          cancel: { label: t('btn.cancel'), color: 'white' }
+        })
+          .onOk(() => {
+            next();
+          });
+      } else {
+        next();
+      }
+    });
+
+    return {
+      t,
+      auditId,
+      findingId,
+      finding,
+      findingOrig,
+      selectedTab,
+      proofsTabVisited,
+      detailsTabVisited,
+      vulnTypes,
+      AUDIT_VIEW_STATE,
+      data,
+      currentTemplate,
+      errors,
+      files,
+      oldPickedFile,
+      audit,
+      vulnCategories,
+      attachments,
+      vulnTypesLang,
+      screenshotsSize,
+      overrideLeaveCheck,
+      transitionEnd,
+      fieldHighlighted,
+      commentTemp,
+      replyTemp,
+      hoverReply,
+      commentDateOptions,
+      attachments,
+      _listener,
+      getVulnTypes,
+      cleanFiles,
+      getVulnerabilityCategories,
+      downloadAttachement,
+      printPositiveMessage,
+      printNegativeMessage,
+      deleteAttachement,
+      updateFiles,
+      handleFile,
+      getFinding,
+      convertParagraphsToHTML,
+      updateFinding,
+      deleteFinding,
+      backupFinding,
+      syncEditors,
+      updateOrig,
+      unsavedChanges
+    };
+  }
 }

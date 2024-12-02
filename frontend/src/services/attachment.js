@@ -1,15 +1,15 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
 
 export default {
-  getAttachment: function(auditId, attachmentId) {
-    return Vue.prototype.$axios.get(`audits/${auditId}/attachments/${attachmentId}`)
+  getAttachment: async (auditId, attachmentId) => {
+    return axiosInstance.get(`audits/${auditId}/attachments/${attachmentId}`)
   },
 
-  createAttachment: function(auditId, attachment) {
-    return Vue.prototype.$axios.post(`audits/${auditId}/attachments`, attachment)
+  createAttachment: async (auditId, attachment) => {
+    return axiosInstance.post(`audits/${auditId}/attachments`, attachment)
   },
 
-  deleteAttachment: function(auditId, attachmentId) {
-    return Vue.prototype.$axios.delete(`audits/${auditId}/attachments/${attachmentId}`)
+  deleteAttachment: async (auditId, attachmentId) => {
+    return axiosInstance.delete(`audits/${auditId}/attachments/${attachmentId}`)
   }
 }

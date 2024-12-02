@@ -1,19 +1,20 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
+
 
 export default {
-  getClients: function() {
-    return Vue.prototype.$axios.get(`clients`)
+  getClients: async () => {
+    return axiosInstance.get('clients')
   },
 
-  createClient: function(client) {
-    return Vue.prototype.$axios.post('clients', client)
+  createClient: async (client) => {
+    return axiosInstance.post('clients', client)
   },
 
-  updateClient: function(clientId, client) {
-    return Vue.prototype.$axios.put(`clients/${clientId}`, client)
+  updateClient: async (clientId, client) => {
+    return axiosInstance.put(`clients/${clientId}`, client)
   },
 
-  deleteClient: function(clientId) {
-    return Vue.prototype.$axios.delete(`clients/${clientId}`)
+  deleteClient: async (clientId) => {
+    return axiosInstance.delete(`clients/${clientId}`)
   }
 }

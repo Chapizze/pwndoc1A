@@ -1,178 +1,169 @@
-import { Dialog, Notify } from 'quasar';
-import draggable from 'vuedraggable'
-import BasicEditor from 'components/editor';
-import CustomFields from 'components/custom-fields'
+import { ref, reactive, computed, onMounted, getCurrentInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { Dialog, Notify } from 'quasar'
+import draggable from 'vue3-draggable'
+import _ from 'lodash'
+import BasicEditor from 'components/editor.vue'
+import CustomFields from 'components/custom-fields.vue'
 
 import DataService from '@/services/data'
 import Utils from '@/services/utils'
-import UserService from '@/services/user'
+import {user, isAllowed} from '@/services/user'
 import TemplateService from '@/services/template'
 
-import { $t } from '@/boot/i18n'
-
 export default {
-    data: () => {
-        return {
-            UserService: UserService,
-            Utils: Utils,
-            templates: [],
+    setup() {
+        const { t } = useI18n()
+        const { proxy } = getCurrentInstance()
 
-            languages: [],
-            newLanguage: {locale: "", language: ""},
-            editLanguages: [],
-            editLanguage: false,
+        const templates = ref([])
+        const languages = ref([])
+        const newLanguage = ref({ locale: "", language: "" })
+        const editLanguages = ref([])
+        const editLanguage = ref(false)
+        const locale = ref("")
 
-            auditTypes: [],
-            newAuditType: {name: "", templates: [], sections: [], hidden: [], stage: 'default'},
-            editAuditTypes: [],
-            editAuditType: false,
+        const auditTypes = ref([])
+        const newAuditType = ref({ 
+            name: "", 
+            templates: [], 
+            sections: [], 
+            hidden: [] 
+        })
+        const editAuditTypes = ref([])
+        const editAuditType = ref(false)
 
-            vulnTypes: [],
-            newVulnType: {name: "", locale: ""},
-            editVulnTypes: [],
-            editVulnType: false,
+        const vulnTypes = ref([])
+        const newVulnType = ref({ name: "", locale: "" })
+        const editVulnTypes = ref([])
+        const editVulnType = ref(false)
 
-            vulnCategories: [],
-            newVulnCat: {name: "", sortValue: "cvssScore", sortOrder: "desc", sortAuto: true},
-            editCategories: [],
-            editCategory: false,
-            sortValueOptions: [
-                {label: $t('cvssScore'), value: 'cvssScore'},
-                {label: $t('cvssTemporalScore'), value: 'cvssTemporalScore'},
-                {label: $t('cvssEnvironmentalScore'), value: 'cvssEnvironmentalScore'},
-                {label: $t('priority'), value: 'priority'},
-                {label: $t('remediationDifficulty'), value: 'remediationComplexity'}
-            ],
-            sortOrderOptions: [
-                {label: $t('ascending'), value: 'asc'},
-                {label: $t('descending'), value: 'desc'}
-            ],
+        const vulnCategories = ref([])
+        const newVulnCat = ref({
+            name: "", 
+            sortValue: "cvssScore", 
+            sortOrder: "desc", 
+            sortAuto: true
+        })
+        const editCategories = ref([])
+        const editCategory = ref(false)
 
-            customFields: [],
-            newCustomField: {
-                label: "", 
-                fieldType: "", 
-                display: "general", 
-                displaySub: "", 
-                size: 12,
-                offset: 0,
-                required: false,
-                inline: false,
-                description: '',
-                text: [],
-                options: []
-            },
-            cfLocale: "",
-            cfDisplayOptions: [
-                {label: $t('auditGeneral'), value: 'general'},
-                {label: $t('auditFinding'), value: 'finding'},
-                {label: $t('auditSection'), value: 'section'},
-                {label: $t('vulnerability'), value: 'vulnerability'}
-            ],
-            cfComponentOptions: [
-                {label: $t('checkbox'), value: 'checkbox', icon: 'check_box'},
-                {label: $t('date'), value: 'date', icon: 'event'},
-                {label: $t('editor'), value: 'text', icon: 'mdi-format-pilcrow'},
-                {label: $t('input'), value: 'input', icon: 'title'},
-                {label: $t('radio'), value: 'radio', icon: 'radio_button_checked'},
-                {label: $t('select'), value: 'select', icon: 'far fa-caret-square-down'},
-                {label: $t('selectMultiple'), value: 'select-multiple', icon: 'filter_none'},
-                {label: $t('space'), value: 'space', icon: 'space_bar'}
-            ],
-            newCustomOption: "",
+        const customFields = ref([])
+        const newCustomField = ref({
+            label: "", 
+            fieldType: "", 
+            display: "general", 
+            displaySub: "", 
+            size: 12,
+            offset: 0,
+            required: false,
+            description: '',
+            text: [],
+            options: []
+        })
+        const cfLocale = ref("")
+        const newCustomOption = ref("")
 
-            sections: [],
-            newSection: {field: "", name: "", icon: ""},
-            editSections: [],
-            editSection: false,
+        const sections = ref([])
+        const newSection = ref({ field: "", name: "", icon: "" })
+        const editSections = ref([])
+        const editSection = ref(false)
 
-            errors: {locale: '', language: '', auditType: '', vulnType: '', vulnCat: '', vulnCatField: '', sectionField: '', sectionName: '', fieldLabel: '', fieldType: ''},
+        const errors = ref({
+            locale: '',
+        })
 
-            selectedTab: "languages",
-        }
-    },
+        const selectedTab = ref("languages")
 
-    components: {
-        BasicEditor,
-        CustomFields,
-        draggable
-    },
+        // Computed Properties
+        const sortValueOptions = computed(() => [
+        {label: t('cvssScore'), value: 'cvssScore'},
+        {label: t('cvssTemporalScore'), value: 'cvssTemporalScore'},
+        {label: t('cvssEnvironmentalScore'), value: 'cvssEnvironmentalScore'},
+        {label: t('severity'), value: 'severity'},
+        {label: t('Urgency'), value: 'urgency'}
+        ])
 
-    mounted: function() {
-        this.getTemplates()
-        this.getLanguages()
-        this.getAuditTypes()
-        this.getVulnerabilityTypes()
-        this.getVulnerabilityCategories()
-        this.getSections()
-        this.getCustomFields()
-    },
+        const sortOrderOptions = computed(() => [
+        {label: t('ascending'), value: 'asc'},
+        {label: t('descending'), value: 'desc'}
+        ])
 
-    computed: {
-        filteredCustomFields() {
-            return this.customFields.filter(field =>
-                (field.display === this.newCustomField.display && field.displayList.every(e => this.newCustomField.displayList.indexOf(e) > -1))
-            )
-        },
+        const cfDisplayOptions = computed(() => [
+        {label: t('auditGeneral'), value: 'general'},
+        {label: t('auditFinding'), value: 'finding'},
+        {label: t('auditSection'), value: 'section'},
+        {label: t('vulnerability'), value: 'vulnerability'}
+        ])
 
-        newCustomFieldLangOptions() {
-            return this.newCustomField.options.filter(e => e.locale === this.cfLocale)
-        }
-    },
+        const cfComponentOptions = computed(() => [
+        {label: t('checkbox'), value: 'checkbox', icon: 'check_box'},
+        {label: t('date'), value: 'date', icon: 'event'},
+        {label: t('editor'), value: 'text', icon: 'mdi-format-pilcrow'},
+        {label: t('input'), value: 'input', icon: 'title'},
+        {label: t('radio'), value: 'radio', icon: 'radio_button_checked'},
+        {label: t('select'), value: 'select', icon: 'far fa-caret-square-down'},
+        {label: t('selectMultiple'), value: 'select-multiple', icon: 'filter_none'},
+        {label: t('space'), value: 'space', icon: 'space_bar'}
+        ])
 
-    methods: {
-        getTemplates: function() {
+        const filteredCustomFields = computed(() => 
+        customFields.value.filter(field => 
+            field.display === newCustomField.value.display && 
+            field.displayList.every(e => newCustomField.value.displayList.indexOf(e) > -1)
+        )
+        )
+
+        const newCustomFieldLangOptions = computed(() => 
+        newCustomField.value.options.filter(e => e.locale === cfLocale.value)
+        )
+
+        const getTemplates  = () => {
             TemplateService.getTemplates()
             .then((data) => {
-                this.templates = data.data.datas;
+                templates.value = data.data.datas;
             })
             .catch((err) => {
                 console.log(err)
             })
-        },
+        }
 
-        requiredFieldsEmpty: function() {
-            Object.keys(this.$refs).forEach(key => {
-                if (key.startsWith('validate') && this.$refs[key]) {
-                    if (Array.isArray(this.$refs[key]))
-                        this.$refs[key].forEach(e => e.validate())
+        const requiredFieldsEmpty = () => {
+            Object.keys(proxy.$refs).forEach(key => {
+                if (key.startsWith('validate') && proxy.$refs[key]) {
+                    if (Array.isArray(proxy.$refs[key]))
+                        proxy.$refs[key].forEach(e => e.validate())
                     else
-                        this.$refs[key].validate()
+                        proxy.$refs[key].validate()
                 }
             })
-            if (this.selectedTab === 'languages')
-                return !this.newLanguage.language || !this.newLanguage.locale
-            if (this.selectedTab === 'audit-types') 
-                return !this.newAuditType.name || this.newAuditType.templates.length !== this.languages.length || this.newAuditType.templates.some(e => !e)
-        },
+            if (selectedTab.value === 'languages')  return !newLanguage.value.language || !newLanguage.value.locale
+            if (selectedTab.value === 'audit-types')  return !newAuditType.value.name || newAuditType.value.templates.length !== languages.value.length || newAuditType.value.templates.some(e => !e)
+        }
 
-/* ===== LANGUAGES ===== */
-
-        // Get available languages
-        getLanguages: function() {
+        const getLanguages = () => {
             DataService.getLanguages()
             .then((data) => {
-                this.languages = data.data.datas;
-                if (this.languages.length > 0) {
-                    this.newVulnType.locale = this.languages[0].locale;
-                    this.cfLocale = this.languages[0].locale;
+                languages.value = data.data.datas;
+                if (languages.value.length > 0) {
+                    newVulnType.locale = languages.value[0].locale;
+                    cfLocale.value = languages.value[0].locale;
                 }
             })
             .catch((err) => {
                 console.log(err)
             })
-        },
+        }
 
-        // Create Language
-        createLanguage: function() {
-            if (this.requiredFieldsEmpty())
+        const createLanguage = () => {
+            if (requiredFieldsEmpty())
                 return;
 
-            DataService.createLanguage(this.newLanguage)
+            DataService.createLanguage(newLanguage.value)
             .then((data) => {
-                this.newLanguage.locale = "";
-                this.newLanguage.language = "";
-                this.getLanguages();
+                newLanguage.value.locale = "";
+                newLanguage.value.language = "";
+                getLanguages();
                 Notify.create({
                     message: 'Language created successfully',
                     color: 'positive',
@@ -188,14 +179,13 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-         // Update Languages
-         updateLanguages: function() {
-            DataService.updateLanguages(this.editLanguages)
+        const updateLanguages = () => {
+            DataService.updateLanguages(editLanguages.value)
             .then((data) => {
-                this.getLanguages()
-                this.editLanguage = false
+                getLanguages()
+                editLanguage.value = false
                 Notify.create({
                     message: 'Languages updated successfully',
                     color: 'positive',
@@ -211,38 +201,32 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-        // Remove Language
-        removeLanguage: function(locale) {
-            this.editLanguages = this.editLanguages.filter(e => e.locale !== locale)
-        },
+        const removeLanguage = (locale) => {
+            editLanguages.value = editLanguages.value.filter(e => e.locale !== locale)
+        }
 
-/* ===== AUDIT TYPES ===== */
-
-        // Get available audit types
-        getAuditTypes: function() {
+        const getAuditTypes = () => {
             DataService.getAuditTypes()
-            .then((data) => {
-                this.auditTypes = data.data.datas;
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-        },
+                    .then((data) => {
+                        auditTypes.value = data.data.datas;
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                    })
+        }
 
-        // Create Audit type
-        createAuditType: function() {
-            if (this.requiredFieldsEmpty())
+        const createAuditType = () => {
+            if (requiredFieldsEmpty())
                 return
-
-            DataService.createAuditType(this.newAuditType)
+            DataService.createAuditType(newAuditType.value)
             .then((data) => {
-                this.newAuditType.name = "";
-                this.newAuditType.templates = [];
-                this.newAuditType.sections = [];
-                this.newAuditType.hidden = [];
-                this.getAuditTypes();
+                newAuditType.name = "";
+                newAuditType.templates = [];
+                newAuditType.sections = [];
+                newAuditType.hidden = [];
+                getAuditTypes();
                 Notify.create({
                     message: 'Audit type created successfully',
                     color: 'positive',
@@ -258,14 +242,15 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
 
-        // Update Audit Types
-        updateAuditTypes: function() {
-            DataService.updateAuditTypes(this.editAuditTypes)
+        }
+
+        const updateAuditTypes = () => {
+
+            DataService.updateAuditTypes(editAuditTypes.value)
             .then((data) => {
-                this.getAuditTypes()
-                this.editAuditType = false
+                getAuditTypes()
+                editAuditType.value = false
                 Notify.create({
                     message: 'Audit Types updated successfully',
                     color: 'positive',
@@ -281,45 +266,42 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-        // Remove Audit Type
-        removeAuditType: function(auditType) {
-            this.editAuditTypes = this.editAuditTypes.filter(e => e.name !== auditType.name)
-        },
+        const removeAuditType = (auditType) => {
+            editAuditTypes.value = editAuditTypes.value.filter(e => e.name !== auditType.name)
+        }
 
-        getTemplateOptionsLanguage: function(locale) {
+        const getTemplateOptionsLanguage = (locale) => {
             var result = []
-            this.templates.forEach(e => result.push({name: e.name, locale: locale, template: e._id}))
+            templates.value.forEach(e => result.push({name: e.name, locale: locale, template: e._id}))
             return result
-        },
+        }
 
-/* ===== VULNERABILITY TYPES ===== */
-
-        // Get available vulnerability types
-        getVulnerabilityTypes: function() {
+        const getVulnerabilityTypes = () => {
             DataService.getVulnerabilityTypes()
             .then((data) => {
-                this.vulnTypes = data.data.datas;
+                vulnTypes.value = data.data.datas;
+                console.log(vulnTypes.value[0].locale)
             })
             .catch((err) => {
                 console.log(err)
             })
-        },
+        }
 
-        // Create vulnerability type
-        createVulnerabilityType: function() {
-            this.cleanErrors();
-            if (!this.newVulnType.name)
-                this.errors.vulnType = "Name required";
-            
-            if (this.errors.vulnType)
+        const createVulnerabilityType = () => {
+
+            cleanErrors();
+            console.log(newVulnType)
+            if (!newVulnType.value.name)
+                errors.vulnType = "Name required";
+            if (errors.vulnType)
                 return;
-
-            DataService.createVulnerabilityType(this.newVulnType)
+            
+            DataService.createVulnerabilityType(newVulnType.value)
             .then((data) => {
-                this.newVulnType.name = "";
-                this.getVulnerabilityTypes();
+                newVulnType.name = "";
+                getVulnerabilityTypes();
                 Notify.create({
                     message: 'Vulnerability type created successfully',
                     color: 'positive',
@@ -335,14 +317,14 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-        // Update Audit Types
-        updateVulnTypes: function() {
-            DataService.updateVulnTypes(this.editVulnTypes)
+        const updateVulnTypes = () => {
+
+            DataService.updateVulnTypes(editVulnTypes.value)
             .then((data) => {
-                this.getVulnerabilityTypes()
-                this.editVulnType = false
+                getVulnerabilityTypes()
+                editVulnType.value = false
                 Notify.create({
                     message: 'Vulnerability Types updated successfully',
                     color: 'positive',
@@ -358,39 +340,33 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-        // Remove vulnerability type
-        removeVulnType: function(vulnType) {
-            this.editVulnTypes = this.editVulnTypes.filter(e => e.name !== vulnType.name || e.locale !== vulnType.locale)
-        },
+        const removeVulnType = (vulnType) => {
+            editVulnTypes.value = editVulnTypes.value.filter(e => e.name !== vulnType.name || e.locale !== vulnType.locale)
+        }
 
-/* ===== CATEGORIES ===== */
-
-        // Get available vulnerability categories
-        getVulnerabilityCategories: function() {
+        const getVulnerabilityCategories = () => {
             DataService.getVulnerabilityCategories()
             .then((data) => {
-                this.vulnCategories = data.data.datas;
+                vulnCategories.value = data.data.datas;
             })
             .catch((err) => {
                 console.log(err)
             })
-        },
+        }
 
-        // Create vulnerability category
-        createVulnerabilityCategory: function() {
-            this.cleanErrors();
-            if (!this.newVulnCat.name)
-                this.errors.vulnCat = "Name required";
+        const createVulnerabilityCategory = () => {
+            cleanErrors();
+            if (!newVulnCat.value.name)
+                errors.vulnCat = "Name required";
             
-            if (this.errors.vulnCat)
+            if (errors.vulnCat)
                 return;
-
-            DataService.createVulnerabilityCategory(this.newVulnCat)
+            DataService.createVulnerabilityCategory(newVulnCat.value)
             .then((data) => {
-                this.newVulnCat = {name: "", sortValue: "cvssScore", sortOrder: "desc", sortAuto: true}
-                this.getVulnerabilityCategories();
+                newVulnCat.value = {name: "", sortValue: "cvssScore", sortOrder: "desc", sortAuto: true}
+                getVulnerabilityCategories();
                 Notify.create({
                     message: 'Vulnerability category created successfully',
                     color: 'positive',
@@ -406,14 +382,14 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-         // Update Vulnerability Categories
-         updateVulnCategories: function() {
-            DataService.updateVulnerabilityCategories(this.editCategories)
+        const updateVulnCategories = () => {
+
+            DataService.updateVulnerabilityCategories(editCategories.value)
             .then((data) => {
-                this.getVulnerabilityCategories()
-                this.editCategory = false
+                getVulnerabilityCategories()
+                editCategory.value = false
                 Notify.create({
                     message: 'Vulnerability Categories updated successfully',
                     color: 'positive',
@@ -429,23 +405,22 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
-        
-        // Remove Category
-        removeCategory: function(vulnCat) {
-            this.editCategories = this.editCategories.filter(e => e.name !== vulnCat.name)
-        },
+        }
 
-        getSortOptions: function(category) {
+        const removeCategory = (vulnCat) => {
+            editCategories.value = editCategories.value.filter(e => e.name !== vulnCat.name)
+        }
+
+        const getSortOptions = (category) => {
             var options = [
-                {label: $t('cvssScore'), value: 'cvssScore'},
-                {label: $t('cvssTemporalScore'), value: 'cvssTemporalScore'},
-                {label: $t('cvssEnvironmentalScore'), value: 'cvssEnvironmentalScore'},
-                {label: $t('priority'), value: 'priority'},
-                {label: $t('remediationComplexity'), value: 'remediationComplexity'}
+                {label: t('cvssScore'), value: 'cvssScore'},
+                {label: t('cvssTemporalScore'), value: 'cvssTemporalScore'},
+                {label: t('cvssEnvironmentalScore'), value: 'cvssEnvironmentalScore'},
+                {label: t('priority'), value: 'priority'},
+                {label: t('remediationComplexity '), value: 'remediationComplexity '}
             ]
             var allowedFieldTypes = ['date', 'input', 'radio', 'select']
-            this.customFields.forEach(e => {
+            customFields.value.forEach(e => {
                 if (
                     (e.display === 'finding' || e.display === 'vulnerability') && 
                     (!e.displaySub || e.displaySub === category) && 
@@ -455,37 +430,35 @@ export default {
                 }
             })
             return options
-        },
+        }
 
-/* ===== CUSTOM FIELDS ===== */
+        const getCustomFields = () => {
 
-        // Get available custom fields
-        getCustomFields: function() {
             DataService.getCustomFields()
             .then((data) => {
-                this.customFields = data.data.datas.filter(e => e.display)
+                customFields.value = data.data.datas.filter(e => e.display)
             })
             .catch((err) => {
                 console.log(err)
             })
-        },
+        }
 
-        // Create custom field
-        createCustomField: function() {
-            if (this.newCustomField.fieldType !== 'space') {
-                this.$refs['select-component'].validate()
-                this.$refs['input-label'].validate()
+        const createCustomField = () => {
 
-                if (this.$refs['select-component'].hasError || this.$refs['input-label'].hasError)
+            if (newCustomField.fieldType !== 'space') {
+                $refs['select-component'].validate()
+                $refs['input-label'].validate()
+
+                if ($refs['select-component'].hasError || $refs['input-label'].hasError)
                     return
             }
 
-            this.newCustomField.position = this.customFields.length
-            DataService.createCustomField(this.newCustomField)
+            newCustomField.position = customFields.length
+            DataService.createCustomField(newCustomField)
             .then((data) => {
-                this.newCustomField.label = ""
-                this.newCustomField.options = []
-                this.getCustomFields()
+                newCustomField.label = ""
+                newCustomField.options = []
+                getCustomFields()
                 Notify.create({
                     message: 'Custom Field created successfully',
                     color: 'positive',
@@ -501,34 +474,10 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-        // Update Custom Fields
-        updateCustomFields: function() {
-            var position = 0
-            this.customFields.forEach(e => e.position = position++)
-            DataService.updateCustomFields(this.customFields)
-            .then((data) => {
-                this.getCustomFields()
-                Notify.create({
-                    message: 'Custom Fields updated successfully',
-                    color: 'positive',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-            .catch((err) => {
-                Notify.create({
-                    message: err.response.data.datas,
-                    color: 'negative',
-                    textColor: 'white',
-                    position: 'top-right'
-                })
-            })
-        },
+        const deleteCustomField = () => {
 
-         // Delete custom field
-         deleteCustomField: function(customField) {
             Dialog.create({
                 title: 'Confirm Suppression',
                 message: `
@@ -543,15 +492,15 @@ export default {
                     </div>
                 </div>
                 `,
-                ok: {label: $t('btn.confirm'), color: 'negative'},
-                cancel: {label: $t('btn.cancel'), color: 'white'},
+                ok: {label: t('btn.confirm'), color: 'negative'},
+                cancel: {label: t('btn.cancel'), color: 'white'},
                 html: true,
                 style: "width: 600px"
             })
             .onOk(() => {
                 DataService.deleteCustomField(customField._id)
                 .then((data) => {
-                    this.getCustomFields()
+                    getCustomFields()
                     Notify.create({
                         message: `
                         Custom Field <strong>${customField.label}</strong> deleted successfully.<br>
@@ -572,85 +521,82 @@ export default {
                     })
                 })
             })
-        },
+        }
 
-        canDisplayCustomField: function(field) {
+        const canDisplayCustomField = () => {
+
             return (
-                (this.newCustomField.display === field.display || (this.newCustomField.display === 'finding' && field.display === 'vulnerability')) && 
-                (this.newCustomField.displaySub === field.displaySub || field.displaySub === '')
+                (newCustomField.display === field.display || (newCustomField.display === 'finding' && field.display === 'vulnerability')) && 
+                (newCustomField.displaySub === field.displaySub || field.displaySub === '')
             )
-        },
+        }
 
-        canDisplayCustomFields: function() {
-            return this.customFields.some(field => this.canDisplayCustomField(field))
-        },
+        const canDisplayCustomFields = () => {
+            console.log(customFields)
+            return customFields.value.some(field => canDisplayCustomField(field))
 
-        // Return the index of the text array that match the selected locale
-        // Also push default empty value if index not found
-        getFieldLocaleText: function(fieldIdx) {
-            var text = this.customFields[fieldIdx].text
+        }
+
+        const getFieldLocaleText = (fieldIdx) => {
+
+            var text = customFields[fieldIdx].text
             for (var i=0; i<text.length; i++) {
-                if (text[i].locale === this.cfLocale)
+                if (text[i].locale === cfLocale)
                     return i
             }
-            if (['select-multiple', 'checkbox'].includes(this.customFields[fieldIdx].fieldType))
-                text.push({locale: this.cfLocale, value: []})
+            if (['select-multiple', 'checkbox'].includes(customFields[fieldIdx].fieldType))
+                text.push({locale: cfLocale, value: []})
             else
-                text.push({locale: this.cfLocale, value: ""})
+                text.push({locale: cfLocale, value: ""})
             return i
-        },
+        }
 
-        addCustomFieldOption: function(options) {
-            options.push({locale: this.cfLocale, value: this.newCustomOption})
-            this.newCustomOption = ""
-        },
+        const addCustomFieldOption = () => {
+            options.push({locale: cfLocale, value: newCustomOption})
+            newCustomOption = ""
+        }
 
-        // Remove option of options based on index of computed lang Option
-        removeCustomFieldOption: function(options, option) {
+        const removeCustomFieldOption = (options, option) => {
             var index = options.findIndex(e => e.locale === option.locale && e.value === option.value)
             options.splice(index, 1)
-        },
+        }
 
-        getOptionsGroup: function(options) {
+        const getOptionsGroup = (options) => {
             return options
-            .filter(e => e.locale === this.cfLocale)
+            .filter(e => e.locale === cfLocale)
             .map(e => {return {label: e.value, value: e.value}})
-        },
+        }
 
-        getFieldLangOptions: function(options) {
-            return options.filter(e => e.locale === this.cfLocale)
-        },
+        const getFieldLangOptions = (options) => {
+            return options.filter(e => e.locale === cfLocale)
+        }
 
-/* ===== SECTIONS ===== */
-
-        // Get available sections
-        getSections: function() {
+        const getSections = () => {
             DataService.getSections()
             .then((data) => {
-                this.sections = data.data.datas;
+                sections.value = data.data.datas;
             })
             .catch((err) => {
                 console.log(err)
             })
-        },
+        }
 
-        // Create section
-        createSection: function() {
-            this.cleanErrors();
-            if (!this.newSection.field)
-                this.errors.sectionField = "Field required";
-            if (!this.newSection.name)
-                this.errors.sectionName = "Name required";
+        const createSection = () => {
+            cleanErrors();
+            if (!newSection.field)
+                errors.sectionField = "Field required";
+            if (!newSection.name)
+                errors.sectionName = "Name required";
             
-            if (this.errors.sectionName || this.errors.sectionField)
+            if (errors.sectionName || errors.sectionField)
                 return;
 
-            DataService.createSection(this.newSection)
+            DataService.createSection(newSection)
             .then((data) => {
-                this.newSection.field = "";
-                this.newSection.name = "";
-                this.newSection.icon = ""
-                this.getSections();
+                newSection.field = "";
+                newSection.name = "";
+                newSection.icon = ""
+                getSections();
                 Notify.create({
                     message: 'Section created successfully',
                     color: 'positive',
@@ -666,15 +612,14 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-         // Update Sections
-         updateSections: function() {
-            Utils.syncEditors(this.$refs)
-            DataService.updateSections(this.editSections)
+        const updateSections = () => {
+            Utils.syncEditors($refs)
+            DataService.updateSections(editSections)
             .then((data) => {
-                this.sections = this.editSections
-                this.editSection = false
+                sections = editSections
+                editSection = false
                 Notify.create({
                     message: 'Sections updated successfully',
                     color: 'positive',
@@ -690,23 +635,111 @@ export default {
                     position: 'top-right'
                 })
             })
-        },
+        }
 
-        // Remove section
-        removeSection: function(index) {
-            this.editSections.splice(index, 1)
-        },
+        const removeSection = () => {
+            
+            editSections.splice(index, 1)
+        }
 
-        cleanErrors: function() {
-            this.errors.locale = ''
-            this.errors.language = ''
-            this.errors.auditType = ''
-            this.errors.vulnType = ''
-            this.errors.vulnCat = ''
-            this.errors.fieldLabel = ''
-            this.errors.fieldType = ''
-            this.errors.sectionField = ''
-            this.errors.sectionName = ''
+        const cleanErrors = () => {
+            errors.locale = ''
+            errors.language = ''
+            errors.auditType = ''
+            errors.vulnType = ''
+            errors.vulnCat = ''
+            errors.fieldLabel = ''
+            errors.fieldType = ''
+            errors.sectionField = ''
+            errors.sectionName = ''
+        }
+
+        onMounted(() => {
+            getTemplates()
+            getLanguages()
+            getAuditTypes()
+            getVulnerabilityTypes()
+            getVulnerabilityCategories()
+            getCustomFields()
+            getSections()
+        })
+        
+
+        return {
+            t,
+            user,
+            isAllowed,
+            templates,
+            languages,
+            newLanguage,
+            editLanguages,
+            editLanguage,
+            auditTypes,
+            newAuditType,
+            editAuditTypes,
+            editAuditType,
+            vulnTypes,
+            newVulnType,
+            editVulnTypes,
+            editVulnType,
+            vulnCategories,
+            newVulnCat,
+            editCategories,
+            editCategory,
+            customFields,
+            newCustomField,
+            cfLocale,
+            newCustomOption,
+            sections,
+            newSection,
+            editSections,
+            editSection,
+            errors,
+            selectedTab,
+            sortValueOptions,
+            sortOrderOptions,
+            cfDisplayOptions,
+            cfComponentOptions,
+            filteredCustomFields,
+            newCustomFieldLangOptions,
+            getTemplates,
+            requiredFieldsEmpty,
+            getLanguages,
+            createLanguage,
+            updateLanguages,
+            removeLanguage,
+            getAuditTypes,
+            createAuditType,
+            updateAuditTypes,
+            removeAuditType,
+            getTemplateOptionsLanguage,
+            getVulnerabilityTypes,
+            createVulnerabilityType,
+            updateVulnTypes,
+            removeVulnType,
+            getVulnerabilityCategories,
+            createVulnerabilityCategory,
+            updateVulnCategories,
+            removeCategory,
+            getSortOptions,
+            getCustomFields,
+            createCustomField,
+            deleteCustomField,
+            canDisplayCustomField,
+            canDisplayCustomFields,
+            getFieldLocaleText,
+            addCustomFieldOption,
+            removeCustomFieldOption,
+            getOptionsGroup,
+            getFieldLangOptions,
+            getSections,
+            createSection,
+            updateSections,
+            removeSection,
+            cleanErrors,
+            _,
+            locale,
+            Utils
         }
     }
 }

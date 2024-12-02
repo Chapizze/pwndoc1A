@@ -1,16 +1,16 @@
 <div>
 <breadcrumb
 buttons
-:title="`${$parent.audit.name} (${$parent.audit.auditType || 'Audit Type not set'})`"
+:title="`${audit.name} (${audit.auditType || 'Audit Type not set'})`"
 :state="parentState"
 :approvals="parentApprovals"
-:path="($parent.audit.parentId) ? `/audits/${$parent.audit.parentId}` : ''"
-:path-name="($parent.audit.type === 'retest') ? $t('originalAudit') : ($parent.audit.type === 'default') ? $t('multi') : ''"
+:path="(audit.parentId) ? `/audits/${audit.parentId}` : ''"
+:path-name="(audit.type === 'retest') ? t('originalAudit') : (audit.type === 'default') ? t('multi') : ''"
 >
-    <div slot="buttons" v-if="frontEndAuditState === AUDIT_VIEW_STATE.EDIT">
+    <template v-slot:buttons v-if="frontEndAuditState === AUDIT_VIEW_STATE.EDIT">
         <q-btn-dropdown 
         class="q-mr-sm"
-        :label="$t('import')"
+        :label="t('import')"
         no-caps
         auto-close
         >
@@ -46,14 +46,14 @@ buttons
                 </q-item>
             </q-list>
         </q-btn-dropdown>
-        <q-btn color="positive" :label="$t('btn.save')+' (ctrl+s)'" no-caps @click="updateAuditNetwork" />
-    </div>
+        <q-btn color="positive" :label="t('btn.save')+' (ctrl+s)'" no-caps @click="updateAuditNetwork" />
+    </template>
 </breadcrumb>
 
 <div class="row q-col-gutter-md q-pa-md">
     <div class="col-md-6">
         <q-card>
-            <q-card-section>{{$t('hostsAssociateScopes')}}</q-card-section>
+            <q-card-section>{{t('hostsAssociateScopes')}}</q-card-section>
             <q-separator />
             <q-card-section v-for="scope of audit.scope" :key="scope.name">
                     <span class="text-h6">{{scope.name}}</span>

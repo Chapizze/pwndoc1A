@@ -8,21 +8,21 @@
             <q-item-section avatar style="min-width:0" class="q-pr-sm">
                 <q-icon name="fa fa-fingerprint" />
             </q-item-section>
-            <q-item-section>{{$t('nav.audits')}}</q-item-section>
+            <q-item-section>{{ t('nav.audits') }}</q-item-section>
             </q-item>
 
             <q-item to='/vulnerabilities' active-class="text-green">
             <q-item-section avatar style="min-width:0" class="q-pr-sm">
                 <q-icon name="fa fa-shield-alt" />
             </q-item-section>
-            <q-item-section>{{$t('nav.vulnerabilities')}}</q-item-section>
+            <q-item-section>{{t('nav.vulnerabilities')}}</q-item-section>
             </q-item>
 
-            <q-item to='/data' active-class="text-green">
+            <q-item to='/data/collaborators' active-class="text-green">
             <q-item-section avatar style="min-width:0" class="q-pr-sm">
                 <q-icon name="fa fa-database" />
             </q-item-section>
-            <q-item-section>{{$t('nav.data')}}</q-item-section>
+            <q-item-section>{{t('nav.data')}}</q-item-section>
             </q-item>
 
             <q-space />
@@ -31,50 +31,69 @@
               <q-item-section avatar style="min-width:0" class="q-pr-sm">
                   <q-icon name="fa fa-cog" />
               </q-item-section>
-              <q-item-section>{{$t('settings')}}</q-item-section>
+              <q-item-section>{{t('settings')}}</q-item-section>
               </q-item>
-            <q-btn-dropdown auto-close flat icon="fa fa-user-circle" no-caps :label="userService.user.username">
+            <q-btn-dropdown auto-close flat icon="fa fa-user-circle" no-caps :label="user.username">
                 <q-list>
-                  <q-item clickable @click="toggleDarkMode()">
-                    <q-item-section side><q-icon size="xs" :name="$q.dark.isActive ? 'fa fa-sun' : 'fa fa-moon'" /></q-item-section>
-                    <q-item-section>{{ $q.dark.isActive ? 'Light' : 'Dark'}}-Mode</q-item-section>
+                  <q-item clickable @click="toggleDarkMode">
+                    <q-item-section side>
+                      <q-icon 
+                        size="xs" 
+                        :name="$q.dark.isActive ? 'fa fa-sun' : 'fa fa-moon'" 
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      {{ $q.dark.isActive ? 'Light' : 'Dark' }}-Mode
+                    </q-item-section>
                   </q-item>
                   <q-item clickable @click="$router.push('/profile')">
                     <q-item-section side><q-icon size="xs" name="fa fa-id-card" /></q-item-section>
-                    <q-item-section>{{$t('profile')}}</q-item-section>
+                    <q-item-section>{{t('profile')}}</q-item-section>
                   </q-item>
                   <q-separator />
                   <q-item clickable @click="logout()">
                     <q-item-section side><q-icon size="xs" name="fa fa-sign-out-alt" /></q-item-section>
-                    <q-item-section>{{$t('logout')}}</q-item-section>
+                    <q-item-section>{{t('logout')}}</q-item-section>
                   </q-item>
                 </q-list>
             </q-btn-dropdown>
         </q-toolbar>      
     </q-header>
     <q-page-container>
-        <router-view :key="$route.params.auditId"/> 
+        <router-view /> 
     </q-page-container>
   </q-layout>
 </template>
 
 <script>
-import UserService from '@/services/user';
+import { user, refreshToken, destroyToken } from '@/services/user';
+import { useI18n } from 'vue-i18n';
+import { ref, onMounted } from 'vue';
+import { Dark, toggleDarkMode } from '@/boot/darkmode';
+
 
 export default {
   name: 'LayoutHome',
-  data () {
-    return {
-      userService: UserService
-    }
-  },
+  setup() {
+    const { t } = useI18n();
+    const userState = ref(user.value);
 
-    methods: {
-        logout: function() {
-            UserService.destroyToken();
-        }
-    }
-}
+    const logout = () => {
+      destroyToken();
+    };
+
+    onMounted(async () => {
+      try {
+        await refreshToken();
+        userState.value = user.value;
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+      }
+    });
+
+    return { t, user, userState, logout, Dark, toggleDarkMode };
+  },
+};
 </script>
 
 <style lang="stylus" scoped>

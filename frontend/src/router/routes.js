@@ -1,4 +1,3 @@
-import UserService from '@/services/user'
 import sso from '../config/config.json'
 
 var isSSO = sso.isSSO;
@@ -10,7 +9,7 @@ export default [
     {path: '', redirect: 'audits' },
     {path: 'audits', component: () => import('pages/audits'), meta: {breadcrumb: 'Audits'}, children: [
       {path: '', name:'audits', component: () => import('pages/audits/list')},
-      {path: ':auditId', component: () => import('pages/audits/edit'), meta: {breadcrumb: 'Edit Audit'}, children: [
+      {path: ':auditId', name: 'AuditDetail', component: () => import('pages/audits/edit'), meta: {breadcrumb: 'Edit Audit'}, children: [
         {path: '', redirect: 'general'},
         {path: 'general', name:'general', component: () => import('pages/audits/edit/general')},
         {path: 'network', name: 'network', component: () => import('pages/audits/edit/network')},
@@ -36,5 +35,5 @@ export default [
     {path: '404', name: '404', component: () => import('pages/404')}
   ]},
   {path: '/login', component: () => import('pages/login')},
-  {path: '*', redirect: rootlogin}
+  {path: '/:pathMatch(.*)', redirect: rootlogin}
 ]
