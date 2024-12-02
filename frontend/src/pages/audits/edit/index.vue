@@ -137,7 +137,7 @@
 				  <q-list no-border>
 					<div class="q-mt-md"></div>
 					<div v-for="audit of children" :key="audit._id">
-					  <q-item dense clickable>
+					  <q-item dense clickable >
 						<q-item-section @click="router.push(`/audits/${audit._id}`)">
 						  <span>{{audit.name}} <b>({{audit.auditType}})</b></span>
 						</q-item-section>
@@ -233,6 +233,7 @@
 							dense
 							class="cursor-pointer"
 							:to="'/audits/'+auditId+'/findings/'+finding._id"
+							active-class="custom-active-item"
 						  >
 							<q-item-section side v-if="!categoryFindings.sortOption.sortAuto && frontEndAuditState === AUDIT_VIEW_STATE.EDIT">
 							  <q-icon name="mdi-arrow-split-horizontal" class="cursor-pointer handle" color="grey" />
@@ -517,7 +518,6 @@
 		  .value();
   
 		findingList.value = result;
-		console.log(findingList.value)
 	  };
   
 	  watch(

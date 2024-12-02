@@ -37,7 +37,7 @@ export default {
     const findingId = ref(route.params.findingId);
     const finding = reactive({});
     const findingOrig = reactive({});
-    const selectedTab = ref("details");
+    const selectedTab = ref("definition");
     const proofsTabVisited = ref(false);
     const detailsTabVisited = ref(false);
     const vulnTypes = ref([]);
@@ -420,7 +420,7 @@ export default {
         }
 
         if (comment.sectionId && sectionId.value !== comment.sectionId) {
-            this.$router.replace({name: 'editSection', params: {
+            proxy.$router.replace({name: 'editSection', params: {
                 auditId: this.auditId, 
                 sectionId: comment.sectionId, 
                 comment: comment
@@ -432,14 +432,14 @@ export default {
         let detailsFields = ["affectedField", "cvssField", "remediationDifficultyField", "priorityField", "remediationField"]
 
         // Go to definition tab and scrollTo field
-        if (this.selectedTab !== 'definition' && (definitionFields.includes(comment.fieldName) || comment.fieldName.startsWith('field-'))) {
-            this.selectedTab = "definition"
+        if (selectedTab !== 'definition' && (definitionFields.includes(comment.fieldName) || comment.fieldName.startsWith('field-'))) {
+            selectedTab = "definition"
         }
-        else if (this.selectedTab !== 'poc' && comment.fieldName === 'pocField') {
-            this.selectedTab = "proofs"
+        else if (selectedTab !== 'poc' && comment.fieldName === 'pocField') {
+            selectedTab = "proofs"
         }
-        else if (this.selectedTab !== 'details' && detailsFields.includes(comment.fieldName)) {
-            this.selectedTab = "details"
+        else if (selectedTab !== 'details' && detailsFields.includes(comment.fieldName)) {
+            selectedTab = "details"
         }
         let checkCount = 0
         const intervalId = setInterval(() => {
@@ -455,8 +455,8 @@ export default {
             }
         }, 100)
 
-        this.fieldHighlighted = comment.fieldName
-        this.$parent.focusedComment = comment._id
+        fieldHighlighted = comment.fieldName
+        proxy.$parent.focusedComment = comment._id
 
     };
 
@@ -608,15 +608,98 @@ export default {
       return false;
     };
 
+    const displayHighlightWarning = () => {
+        if (overrideLeaveCheck)
+            return null
+
+        if (!proxy.settings.report.enabled || !proxy.settings.report.public.highlightWarning)
+            return null
+
+        var matchString = `(<mark data-color="${proxy.settings.report.public.highlightWarningColor}".+?>.+?)</mark>`
+        var regex = new RegExp(matchString)
+        var result = ""
+
+        result = regex.exec(finding.description)
+        if (result && result[1])
+            return (result[1].length > 119) ? "<b>Description</b><br/>"+result[1].substring(0,119)+'...' : "<b>Description</b><br/>"+result[1]
+        result = regex.exec(finding.observation)
+        if (result && result[1])
+            return (result[1].length > 119) ? "<b>Observation</b><br/>"+result[1].substring(0,119)+'...' : "<b>Observation</b><br/>"+result[1]
+        result = regex.exec(finding.poc)
+        if (result && result[1])
+            return (result[1].length > 119) ? "<b>Proofs</b><br/>"+result[1].substring(0,119)+'...' : "<b>Proofs</b><br/>"+result[1]
+        result = regex.exec(finding.remediation)
+        if (result && result[1])
+            return (result[1].length > 119) ? "<b>Remediation</b><br/>"+result[1].substring(0,119)+'...' : "<b>Remediation</b><br/>"+result[1]
+        
+
+        if (finding.customFields && finding.customFields.length > 0) {
+            for (let i in finding.customFields) {
+                let field = finding.customFields[i]
+                if (field.customField && field.text && field.customField.fieldType === "text") {
+                    result = regex.exec(field.text)
+                    if (result && result[1])
+                        return (result[1].length > 119) ? `<b>${field.customField.label}</b><br/>`+result[1].substring(0,119)+'...' : `<b>${field.customField.label}</b><br/>`+result[1]
+                }
+            }
+        }
+        
+        return null
+    };
+
+    const requiredFieldsEmpty = () => {
+        var hasErrors = false
+
+        if (proxy.$refs.titleField) {
+            proxy.$refs.titleField.validate()
+            hasErrors = hasErrors || proxy.$refs.titleField.hasError
+        }
+        if (proxy.$refs.typeField) {
+            proxy.$refs.typeField.validate()
+            hasErrors = hasErrors || proxy.$refs.typeField.hasError
+        }
+        if (proxy.$refs.descriptionField) {
+            proxy.$refs.descriptionField.validate()
+            hasErrors = hasErrors || proxy.$refs.descriptionField.hasError
+        }
+        if (proxy.$refs.observationField) {
+            proxy.$refs.observationField.validate()
+            hasErrors = hasErrors || proxy.$refs.observationField.hasError
+        }
+        if (proxy.$refs.referencesField) {
+            proxy.$refs.referencesField.validate()
+            hasErrors = hasErrors || proxy.$refs.referencesField.hasError
+        }
+        if (proxy.$refs.pocField) {
+            proxy.$refs.pocField.validate()
+            hasErrors = hasErrors || proxy.$refs.pocField.hasError
+        }
+        if (proxy.$refs.affectedField) {
+            proxy.$refs.affectedField.validate()
+            hasErrors = hasErrors || proxy.$refs.affectedField.hasError
+        }
+        if (proxy.$refs.remediationDifficultyField) {
+            proxy.$refs.remediationDifficultyField.validate()
+            hasErrors = hasErrors || proxy.$refs.remediationDifficultyField.hasError
+        }
+        if (proxy.$refs.priorityField) {
+            proxy.$refs.priorityField.validate()
+            hasErrors = hasErrors || proxy.$refs.priorityField.hasError
+        }
+        if (proxy.$refs.remediationField) {
+            proxy.$refs.remediationField.validate()
+            hasErrors = hasErrors || proxy.$refs.remediationField.hasError
+        }
+
+        return hasErrors
+    };
+
     onMounted(() => {
       getFinding();
       getVulnerabilityCategories();
       socket.emit('menu', { menu: 'editFinding', finding: findingId.value, room: auditId.value });
-      selectedTab.value = 'details';
       syncEditors();
       updateOrig();
-      detailsTabVisited.value = true;
-      selectedTab.value = 'definition';
 
       // save on ctrl+s
       document.addEventListener('keydown', _listener, false);
@@ -643,6 +726,8 @@ export default {
       } else {
         next();
       }
+
+      
     });
 
     return {
@@ -691,7 +776,8 @@ export default {
       backupFinding,
       syncEditors,
       updateOrig,
-      unsavedChanges
+      unsavedChanges,
+      requiredFieldsEmpty
     };
   }
 }

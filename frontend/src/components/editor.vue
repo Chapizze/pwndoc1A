@@ -359,7 +359,7 @@ export default {
 
     onMounted(() => {
       editor.value.setEditable(props.editable, false);
-      if (typeof props.value === 'undefined' || props.modelValue === editor.value.getHTML()) return; 
+      if (props.modelValue === editor.value.getHTML()) return; 
       const content = state.htmlEncode(props.modelValue);
       editor.value.commands.setContent(content);
     });

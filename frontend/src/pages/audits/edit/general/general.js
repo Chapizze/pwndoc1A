@@ -16,7 +16,7 @@ import AttachmentService from '@/services/attachment';
 import { useI18n } from 'vue-i18n';
 import { ref, reactive, onMounted, onUnmounted, nextTick, getCurrentInstance } from 'vue';
 import _ from 'lodash';
-import settings from '@/boot/settings';
+import {settings} from '@/boot/settings';
 import { socket } from '@/boot/socketio';
 
 export default {
@@ -408,6 +408,7 @@ export default {
       auditTypes,
       attachments,
       customFields,
+      settings,
       loading,
       AUDIT_VIEW_STATE,
       getAuditGeneral,

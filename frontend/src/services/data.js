@@ -26,7 +26,6 @@ export default {
   },
 
   createAuditType: async (auditType) => {
-    console.log(auditType)
     return axiosInstance.post('data/audit-types', auditType)
   },
 

@@ -66,7 +66,6 @@ export default {
       if (key.startsWith('basiceditor_') && refs[key]) {
         // Handle both array and single ref scenarios
         if (Array.isArray(refs[key])) {
-          console.log('array', refs[key])
           refs[key].forEach(elt => {
             if (typeof elt.updateHTML === 'function') {
               elt.updateHTML();

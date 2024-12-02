@@ -282,7 +282,6 @@ export default {
             DataService.getVulnerabilityTypes()
             .then((data) => {
                 vulnTypes.value = data.data.datas;
-                console.log(vulnTypes.value[0].locale)
             })
             .catch((err) => {
                 console.log(err)
@@ -292,7 +291,6 @@ export default {
         const createVulnerabilityType = () => {
 
             cleanErrors();
-            console.log(newVulnType)
             if (!newVulnType.value.name)
                 errors.vulnType = "Name required";
             if (errors.vulnType)
@@ -532,7 +530,6 @@ export default {
         }
 
         const canDisplayCustomFields = () => {
-            console.log(customFields)
             return customFields.value.some(field => canDisplayCustomField(field))
 
         }
