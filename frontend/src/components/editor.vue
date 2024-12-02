@@ -356,264 +356,262 @@ export default {
             else if (this.editor.isActive('heading', {level: 6})) return 'H6'
         },
 
-        diffContent: function() {
-            var content = ''
-            if (typeof this.diff !== "undefined") {
-                var HtmlDiff = new Diff.Diff(true)
-                HtmlDiff.tokenize = function(value) {
-                    return value.split(/([{}:;,.]|<p>|<\/p>|<pre><code>|<\/code><\/pre>|<[uo]l><li>.*<\/li><\/[uo]l>|\s+)/);
-                }
-                var value = this.value || ""
-                var diff = HtmlDiff.diff(this.diff, value)
-                diff.forEach(part => {
-                    const diffclass = part.added ? 'diffadd' : part.removed ? 'diffrem' : 'diffeq'
-                    var value = part.value.replace(/<p><\/p>/g, '<p><br></p>')
-                    if (part.added || part.removed) {
-                        value = value
-                        .replace(/(<p>)(.+?)(<\/p>|$)/g, `$1<span class="${diffclass}">$2</span>$3`) // Insert span diffclass in paragraphs
-                        .replace(/(<pre><code>)(.+?)(<\/code><\/pre>|$)/g, `$1<span class="${diffclass}">$2</span>$3`) // Insert span diffclass in codeblocks
-                        .replace(/(^[^<].*?)(<|$)/g, `<span class="${diffclass}">$1</span>$2`) // Insert span diffclass if text only
-                    }
-                        content += value
-                })
+    const diffContent = computed(() => {
+      let content = '';
+      if (typeof props.diff !== 'undefined') {
+        const HtmlDiff = new Diff.Diff(true);
+        HtmlDiff.tokenize = (value) => value.split(/([{}:;,.]|<p>|<\/p>|<pre><code>|<\/code><\/pre>|<[uo]l><li>.*<\/li><\/[uo]l>|\s+)/);
+        const value = props.value || '';
+        const diff = HtmlDiff.diff(props.diff, value);
+        diff.forEach((part) => {
+          const diffclass = part.added ? 'diffadd' : part.removed ? 'diffrem' : 'diffeq';
+          let value = part.value.replace(/<p><\/p>/g, '<p><br></p>');
+          if (part.added || part.removed) {
+            value = value
+              .replace(/(<p>)(.+?)(<\/p>|$)/g, `$1<span class="${diffclass}">$2</span>$3`) // Insert span diffclass in paragraphs
+              .replace(/(<pre><code>)(.+?)(<\/code><\/pre>|$)/g, `$1<span class="${diffclass}">$2</span>$3`) // Insert span diffclass in codeblocks
+              .replace(/(^[^<].*?)(<|$)/g, `<span class="${diffclass}">$1</span>$2`); // Insert span diffclass if text only
+          }
+          content += value;
+        });
+      }
+      return content;
+    });
+
+    watch(
+      () => props.modelValue,
+      (value) => {
+        if (value === editor.value.getHTML()) return;
+        const content = state.htmlEncode(value);
+        editor.value.commands.setContent(content);
+      }
+    );
+
+    watch(
+      () => props.editable,
+      (value) => {
+        editor.value.setEditable(value, false);
+      }
+    );
+
+    onMounted(() => {
+      editor.value.setEditable(props.editable, false);
+      if (typeof props.value === 'undefined' || props.modelValue === editor.value.getHTML()) return; 
+      const content = state.htmlEncode(props.modelValue);
+      editor.value.commands.setContent(content);
+    });
+
+    onBeforeUnmount(() => {
+      editor.value.destroy();
+    });
+
+    return {
+      editor,
+      state,
+      formatIcon,
+      formatLabel,
+      diffContent,
+      importImage,
+      updateHTML,
+      convertParagraphsToHTML,
+    };
+  },
+};
+    </script>
+    
+    <style lang="scss">
+    .editor {
+        :focus {
+            outline: none;
+        }
+    
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        p,
+        ul,
+        ol,
+        pre,
+        blockquote {
+            &:first-child {
+                margin-top: 0;
             }
-            return content
-        }
-    },
-
-    methods: {
-        importImage(files) {
-            var file = files[0];
-            var fileReader = new FileReader();
-
-            var auditId = null
-              var path = window.location.pathname.split('/')
-              if (path && path.length > 3 && path[1] === 'audits')
-                auditId = path[2]
-
-            fileReader.onloadend = (e) => {
-                Utils.resizeImg(fileReader.result)
-                .then(data => {
-                    return ImageService.createImage({value: data, name: file.name, auditId: auditId})
-                })
-                .then((data) => {
-                    this.editor.chain().focus().setImage({src: data.data.datas._id, alt: file.name }).run()
-                })
-                .catch(err => console.log(err))
+    
+            &:last-child {
+                margin-bottom: 0;
             }
-
-            fileReader.readAsDataURL(file);
-        },
-
-        updateHTML() {
-            this.json = this.editor.getJSON()
-            this.html = this.editor.getHTML()
-            if (Array.isArray(this.json.content) && this.json.content.length === 1 && !this.json.content[0].hasOwnProperty("content")) {
-                this.html = ""
+        }
+    
+        .affix {
+            width: auto;
+            border-bottom: 1px solid rgba(0,0,0,0.12);
+            border-right: 1px solid rgba(0,0,0,0.12);
+            top: 50px!important;
+            z-index: 1000;
+            position: fixed;
+        }
+    
+        .affix-top {
+            top: unset!important;
+        }
+    }
+    
+    .editor {
+      &__content {
+    
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: break-word;
+    
+        .ProseMirror {
+            min-height: 200px;
+            cursor: auto;
+        }
+    
+        h1 {
+            font-size: 4.25rem;
+        }
+    
+        pre {
+          padding: 0.7rem 1rem;
+          border-radius: 5px;
+          background: black;
+          color: white;
+          font-size: 0.8rem;
+          overflow-x: auto;
+          white-space: pre-wrap;
+    
+          code {
+            display: block;
+          }
+        }
+    
+        p code {
+          padding: 0.2rem 0.4rem;
+          border-radius: 5px;
+          font-size: 0.8rem;
+          font-weight: bold;
+          background: rgba(black, 0.1);
+          color: rgba(black, 0.8);
+        }
+    
+        ul,
+        ol {
+          padding-left: 1rem;
+        }
+    
+        li > p,
+        li > ol,
+        li > ul {
+          margin: 0;
+        }
+    
+        a {
+          color: inherit;
+        }
+    
+        blockquote {
+          border-left: 3px solid rgba(black, 0.1);
+          color: rgba(black, 0.8);
+          padding-left: 0.8rem;
+          font-style: italic;
+    
+          p {
+            margin: 0;
+          }
+        }
+    
+        img {
+          max-width: 100%;
+          border-radius: 3px;
+        }
+    
+        .selected {
+            outline-style: solid;
+            outline-color: $blue-4;
+        }
+    
+        table {
+          border-collapse: collapse;
+          table-layout: fixed;
+          width: 100%;
+          margin: 0;
+          overflow: hidden;
+    
+          td, th {
+            min-width: 1em;
+            border: 2px solid grey;
+            padding: 3px 5px;
+            vertical-align: top;
+            box-sizing: border-box;
+            position: relative;
+            > * {
+              margin-bottom: 0;
             }
-            this.$emit('input', this.html)
+          }
+    
+          th {
+            font-weight: bold;
+            text-align: left;
+          }
+    
+          .selectedCell:after {
+            z-index: 2;
+            position: absolute;
+            content: "";
+            left: 0; right: 0; top: 0; bottom: 0;
+            background: rgba(200, 200, 255, 0.4);
+            pointer-events: none;
+          }
+    
+          .column-resize-handle {
+            position: absolute;
+            right: -2px; top: 0; bottom: 0;
+            width: 4px;
+            z-index: 20;
+            background-color: #adf;
+            pointer-events: none;
+          }
         }
-    }
-}
-</script>
-
-<style lang="scss">
-.editor {
-    :focus {
-        outline: none;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    p,
-    ul,
-    ol,
-    pre,
-    blockquote {
-        &:first-child {
-            margin-top: 0;
+    
+        .tableWrapper {
+          margin: 1em 0;
+          overflow-x: auto;
         }
-
-        &:last-child {
-            margin-bottom: 0;
+    
+        .resize-cursor {
+          cursor: ew-resize;
+          cursor: col-resize;
         }
-    }
-
-    .affix {
-        width: auto;
-        border-bottom: 1px solid rgba(0,0,0,0.12);
-        border-right: 1px solid rgba(0,0,0,0.12);
-        top: 50px!important;
-        z-index: 1000;
-        position: fixed;
-    }
-
-    .affix-top {
-        top: unset!important;
-    }
-}
-
-.editor {
-  &__content {
-
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-
-    .ProseMirror {
-        min-height: 200px;
-        cursor: auto;
-    }
-
-    h1 {
-        font-size: 4.25rem;
-    }
-
-    pre {
-      padding: 0.7rem 1rem;
-      border-radius: 5px;
-      background: black;
-      color: white;
-      font-size: 0.8rem;
-      overflow-x: auto;
-      white-space: pre-wrap;
-
-      code {
-        display: block;
+    
       }
     }
-
-    p code {
-      padding: 0.2rem 0.4rem;
-      border-radius: 5px;
-      font-size: 0.8rem;
-      font-weight: bold;
-      background: rgba(black, 0.1);
-      color: rgba(black, 0.8);
+    .is-active {
+        color: green;
     }
-
-    ul,
-    ol {
-      padding-left: 1rem;
+    .editor-toolbar {
+        min-height: 32px;
     }
-
-    li > p,
-    li > ol,
-    li > ul {
-      margin: 0;
+    
+    .diffrem {
+        background-color: #fdb8c0;
     }
-
-    a {
-      color: inherit;
+    pre .diffrem {
+        background-color: $red-6;
     }
-
-    blockquote {
-      border-left: 3px solid rgba(black, 0.1);
-      color: rgba(black, 0.8);
-      padding-left: 0.8rem;
-      font-style: italic;
-
-      p {
-        margin: 0;
-      }
+    
+    .diffadd {
+        background-color: #acf2bd;
     }
-
-    img {
-      max-width: 100%;
-      border-radius: 3px;
+    pre .diffadd {
+        background-color: $green-6;
     }
-
-    .selected {
-        outline-style: solid;
-        outline-color: $blue-4;
+    
+    .text-negative .editor:not(.q-dark) {
+        color:var(--q-color-primary)!important;
     }
-
-    table {
-      border-collapse: collapse;
-      table-layout: fixed;
-      width: 100%;
-      margin: 0;
-      overflow: hidden;
-
-      td, th {
-        min-width: 1em;
-        border: 2px solid grey;
-        padding: 3px 5px;
-        vertical-align: top;
-        box-sizing: border-box;
-        position: relative;
-        > * {
-          margin-bottom: 0;
-        }
-      }
-
-      th {
-        font-weight: bold;
-        text-align: left;
-      }
-
-      .selectedCell:after {
-        z-index: 2;
-        position: absolute;
-        content: "";
-        left: 0; right: 0; top: 0; bottom: 0;
-        background: rgba(200, 200, 255, 0.4);
-        pointer-events: none;
-      }
-
-      .column-resize-handle {
-        position: absolute;
-        right: -2px; top: 0; bottom: 0;
-        width: 4px;
-        z-index: 20;
-        background-color: #adf;
-        pointer-events: none;
-      }
-    }
-
-    .tableWrapper {
-      margin: 1em 0;
-      overflow-x: auto;
-    }
-
-    .resize-cursor {
-      cursor: ew-resize;
-      cursor: col-resize;
-    }
-
-  }
-}
-.is-active {
-    color: green;
-}
-.is-active-highlight {
-    background-color: grey;
-}
-
-.editor-toolbar {
-    min-height: 32px;
-}
-
-.diffrem {
-    background-color: #fdb8c0;
-}
-pre .diffrem {
-    background-color: $red-6;
-}
-
-.diffadd {
-    background-color: #acf2bd;
-}
-pre .diffadd {
-    background-color: $green-6;
-}
-
-.text-negative .editor:not(.q-dark) {
-    color:var(--q-color-primary)!important;
-}
-
-</style>
+    
+    </style>

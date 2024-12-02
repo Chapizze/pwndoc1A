@@ -300,20 +300,19 @@ export default {
         getVulnerabilityTypes: function() {
             DataService.getVulnerabilityTypes()
             .then((data) => {
-                this.vulnTypes = data.data.datas;
+                vulnTypes.value = data.data.datas;
             })
             .catch((err) => {
                 console.log(err)
             })
         },
 
-        // Create vulnerability type
-        createVulnerabilityType: function() {
-            this.cleanErrors();
-            if (!this.newVulnType.name)
-                this.errors.vulnType = "Name required";
-            
-            if (this.errors.vulnType)
+        const createVulnerabilityType = () => {
+
+            cleanErrors();
+            if (!newVulnType.value.name)
+                errors.vulnType = "Name required";
+            if (errors.vulnType)
                 return;
 
             DataService.createVulnerabilityType(this.newVulnType)
@@ -581,9 +580,10 @@ export default {
             )
         },
 
-        canDisplayCustomFields: function() {
-            return this.customFields.some(field => this.canDisplayCustomField(field))
-        },
+        const canDisplayCustomFields = () => {
+            return customFields.value.some(field => canDisplayCustomField(field))
+
+        }
 
         // Return the index of the text array that match the selected locale
         // Also push default empty value if index not found

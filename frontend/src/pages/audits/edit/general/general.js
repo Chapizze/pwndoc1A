@@ -13,8 +13,11 @@ import TemplateService from '@/services/template';
 import DataService from '@/services/data';
 import Utils from '@/services/utils';
 import AttachmentService from '@/services/attachment';
-
-import { $t } from '@/boot/i18n'
+import { useI18n } from 'vue-i18n';
+import { ref, reactive, onMounted, onUnmounted, nextTick, getCurrentInstance } from 'vue';
+import _ from 'lodash';
+import {settings} from '@/boot/settings';
+import { socket } from '@/boot/socketio';
 
 export default {
     props: {
@@ -427,49 +430,115 @@ export default {
             })
            
 
-        },
-        downloadDocument(index) {
-            AuditService.getAudit(this.auditId)
-            .then(async data => {  
-                AttachmentService.getAttachment(this.auditId, data.data.datas.attachments[index]._id)
-                .then((data) => {
-                    var file = data.data.datas
-                    var blob = new Blob([Buffer.from(file.value, 'base64')], {type: "application/octet-stream"});
-                    var link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.download = file.name
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
-                    this.printPositiveMessage('Attachment successfully downloaded')
-                })
-                .catch(err =>{
-                    this.printNegativeMessage(err.response.data.datas)
-                })
-            })
-            .catch(err =>{
-                this.printNegativeMessage(err.response.data.datas)
-            })
-        },
-        printPositiveMessage: function (message) {
-            Notify.create({
-                message: $t(message),
-                type: "positive",
-                position: 'top-right',
-                iconSize: "64px",
-                iconColor: "white",
-                timeout: "5000"
-            })
-        },
-        printNegativeMessage: function (message) {
-            Notify.create({
-                message: $t(message),
-                type: "negative",
-                position: 'top-right',
-                iconSize: "100px",
-                iconColor: "white",
-                timeout: "7000"
-            })
-        }
-    }
-}
+    const downloadDocument = async (index) => {
+      try {
+        const data = await AuditService.getAudit(auditId.value);
+        const attachmentData = await AttachmentService.getAttachment(auditId.value, data.data.datas.attachments[index]._id);
+        const file = attachmentData.data.datas;
+        const blob = new Blob([Uint8Array.from(atob(file.value), c => c.charCodeAt(0))], {type: "application/octet-stream"});
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        printPositiveMessage('Attachment successfully downloaded');
+      } catch (err) {
+        printNegativeMessage(err.response.data.datas);
+      }
+    };
+
+    const printPositiveMessage = (message) => {
+      Notify.create({
+        message: t(message),
+        type: 'positive',
+        position: 'top-right',
+        iconSize: '64px',
+        iconColor: 'white',
+        timeout: '5000',
+      });
+    };
+
+    const printNegativeMessage = (message) => {
+      Notify.create({
+        message: t(message),
+        type: 'negative',
+        position: 'top-right',
+        iconSize: '100px',
+        iconColor: 'white',
+        timeout: '7000',
+      });
+    };
+
+    const _listener = (e) => {
+      if ((window.navigator.platform.match('Mac') ? e.metaKey : e.ctrlKey) && e.keyCode === 83) {
+        e.preventDefault();
+        if (props.frontEndAuditState === AUDIT_VIEW_STATE.EDIT) updateAuditGeneral();
+      }
+    };
+
+    onMounted(() => {
+      auditId.value = proxy.$route.params.auditId;
+      getAuditGeneral();
+      getTemplates();
+      getLanguages();
+      getAuditTypes();
+      socket.emit('menu', { menu: 'general', room: auditId.value });
+      document.addEventListener('keydown', _listener, false);
+    });
+
+    onUnmounted(() => {
+      if (!loading.value) {
+        socket.emit('leave', { username: user.username, room: auditId.value });
+        socket.off();
+      }
+      document.removeEventListener('keydown', _listener, false);
+    });
+
+    return {
+      t,
+      audit,
+      auditOrig,
+      clients,
+      selectClients,
+      collaborators,
+      reviewers,
+      companies,
+      selectCompanies,
+      templates,
+      languages,
+      auditTypes,
+      attachments,
+      customFields,
+      settings,
+      loading,
+      AUDIT_VIEW_STATE,
+      getAuditGeneral,
+      updateAuditGeneral,
+      getClients,
+      getCompanies,
+      getCollaborators,
+      getReviewers,
+      getTemplates,
+      getLanguages,
+      getAuditTypes,
+      filterClients,
+      setCompanyFromClient,
+      createSelectCompany,
+      filterSelectCompany,
+      displayHighlightWarning,
+      updateFiles,
+      deleteDocument,
+      downloadDocument,
+      printPositiveMessage,
+      printNegativeMessage,
+      requiredFieldsEmpty
+    };
+  },
+  components: {
+    Breadcrumb,
+    TextareaArray,
+    CustomFields,
+    BasicEditor,
+  },
+};

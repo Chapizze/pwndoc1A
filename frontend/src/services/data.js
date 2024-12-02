@@ -25,9 +25,9 @@ export default {
         return Vue.prototype.$axios.get(`data/audit-types`)
     },
 
-    createAuditType: function(auditType) {
-        return Vue.prototype.$axios.post(`data/audit-types`, auditType)
-    },
+  createAuditType: async (auditType) => {
+    return axiosInstance.post('data/audit-types', auditType)
+  },
 
     deleteAuditType: function(name) {
         return Vue.prototype.$axios.delete(`data/audit-types/${name}`)
