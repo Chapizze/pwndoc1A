@@ -44,17 +44,34 @@
     </breadcrumb>
 
     <div class="row" v-if="audit.type === 'default'" >
-      <q-tabs v-model="selectedTab" align="left" indicator-color="primary" active-bg-color="grey-3"
-        class="bg-white full-width">
+        <q-tabs 
+        v-model="selectedTab" 
+        align="left" 
+        indicator-color="primary" 
+        :class="$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-dark'"
+        :active-bg-color="$q.dark.isActive ? 'grey-8' : 'grey-3'"
+        class="full-width"
+    >
         <q-tab name="definition" default :label="t('definition')" />
         <q-tab name="details" :label="t('details')" />
         <q-tab name="proofs" :label="t('proofs')" /> 
         <template v-if="frontEndAuditState === AUDIT_VIEW_STATE.EDIT">
-          <q-separator vertical />
-          <q-toggle :label="t('completed')" v-model="finding.status" :true-value=0 :false-value=1 checked-icon="check" unchecked-icon="clear" color="green" />
+            <q-separator 
+                vertical 
+                :color="$q.dark.isActive ? 'grey-6' : 'grey-4'"
+            />
+            <q-toggle 
+                :label="t('completed')" 
+                v-model="finding.status" 
+                :true-value=0 
+                :false-value=1 
+                checked-icon="check" 
+                unchecked-icon="clear" 
+                :color="$q.dark.isActive ? 'green-4' : 'green'"
+            />
         </template>
         <q-space />
-      </q-tabs>
+    </q-tabs>
 
       <div class="row full-width q-mt-md q-pr-md">
         <q-tab-panels v-model="selectedTab" animated class="bg-transparent" :class="($parent.$parent.commentMode)?'col-md-8 col-12':'col-md-8 col-12 offset-md-2'" @before-transition="syncEditors" @transition="updateOrig" keep-alive >            
@@ -347,8 +364,7 @@
                 </q-card>
             </q-tab-panel>
         </q-tab-panels>
-        <q-card v-if="$parent.$parent.commentMode" class="col-md-3 col-12 offset-md-1 bg-grey-11 q-mb-md">
-            <q-item>
+        <q-card v-if="$parent.$parent.commentMode" :class="[$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-dark', 'col-md-3 col-12 offset-md-1 q-mb-md']">            <q-item>
                 <q-item-section>
                     <span class="text-h6">{{$t('comments')}}</span>
                 </q-item-section>
@@ -381,7 +397,7 @@
                 </q-item-section>
             </q-item>
             <q-scroll-area class="comment-panel-height">
-                <q-list class="bg-grey-11">
+                <q-list :class="$q.dark.isActive ? 'bg-dark text-white' : 'bg-white text-dark'">
                     <div v-for="comment in audit.comments" :key="comment._id">
                         <q-item v-if="displayComment(comment)">
                             <q-item-section @click="focusComment(comment)">
