@@ -1,5 +1,5 @@
 import { Notify } from 'quasar';
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, watch, getCurrentInstance } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import _ from 'lodash';
@@ -27,6 +27,7 @@ export default {
     const { t } = useI18n();
     const route = useRoute();
     const audit = ref({});
+    const proxy = getCurrentInstance();
     const auditId = ref(route.params.auditId);
     const finding = reactive({});
     const findingTitle = ref('');
@@ -185,6 +186,8 @@ export default {
           cvssv3: '',
           customFields: Utils.filterCustomFields('finding', '', props.parentCustomFields, [], languages.value),
         };
+        console.log(proxy)
+        proxy.$parent.getAudit();
       }
 
       if (finding) {
@@ -206,6 +209,7 @@ export default {
           });
         }
       }
+      proxy.$parent.getAudit();
     };
 
     watch(

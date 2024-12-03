@@ -349,7 +349,7 @@ async function prepAuditData(data, settings) {
         })
     })
     result.language = data.language || "undefined"
-    result.scope = data.scope.toObject() || []
+    result.scope = data.scope || []
 
     result.findings = []
     for (var finding of data.findings) {

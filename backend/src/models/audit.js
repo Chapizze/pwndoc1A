@@ -744,7 +744,6 @@ AuditSchema.statics.deleteFinding = (isAdmin, auditId, userId, findingId) => {
         var query = Audit.findById(auditId)
         if (!isAdmin)
             query.or([{creator: userId}, {collaborators: userId}])
-        query.select('findings')
         query.exec()
         .then((row) => {
             if (!row)

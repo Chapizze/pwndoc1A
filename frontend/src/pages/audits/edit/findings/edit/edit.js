@@ -14,6 +14,7 @@ import { useRoute, useRouter } from 'vue-router';
 import _ from 'lodash';
 import settings from '@/boot/settings';
 import { socket } from '@/boot/socketio';
+import { user } from '@/services/user';
 
 export default {
   props: {
@@ -391,14 +392,14 @@ export default {
 
     const toggleCommentView = () => {
         Utils.syncEditors(proxy.$refs)
-        proxy.$parent.commentMode = !proxy$parent.commentMode
-        if (proxy.$parent.commentMode) {
-            proxy.$parent.commentSplitRatio = 80
-            proxy.$parent.commentSplitLimits = [80, 80]
+        proxy.$parent.$parent.commentMode = !proxy.$parent.$parent.commentMode
+        if (proxy.$parent.$parent.commentMode) {
+            proxy.$parent.$parent.commentSplitRatio = 80
+            proxy.$parent.$parent.commentSplitLimits = [80, 80]
         }
         else {
-            proxy.$parent.commentSplitRatio = 100
-            proxy.$parent.commentSplitLimits = [100, 100]
+            proxy.$parent.$parent.commentSplitRatio = 100
+            proxy.$parent.$parent.commentSplitLimits = [100, 100]
         }
     };
 
@@ -433,20 +434,20 @@ export default {
 
         // Go to definition tab and scrollTo field
         if (selectedTab !== 'definition' && (definitionFields.includes(comment.fieldName) || comment.fieldName.startsWith('field-'))) {
-            selectedTab = "definition"
+            selectedTab.value = "definition"
         }
         else if (selectedTab !== 'poc' && comment.fieldName === 'pocField') {
-            selectedTab = "proofs"
+            selectedTab.value = "proofs"
         }
         else if (selectedTab !== 'details' && detailsFields.includes(comment.fieldName)) {
-            selectedTab = "details"
+            selectedTab.value = "details"
         }
         let checkCount = 0
         const intervalId = setInterval(() => {
             checkCount++
             if (document.getElementById(comment.fieldName)) {
                 clearInterval(intervalId)
-                this.$nextTick(() => {
+                nextTick(() => {
                     document.getElementById(comment.fieldName).scrollIntoView({block: "center"})
                 })
             }
@@ -455,7 +456,7 @@ export default {
             }
         }, 100)
 
-        fieldHighlighted = comment.fieldName
+        fieldHighlighted.value = comment.fieldName
         proxy.$parent.focusedComment = comment._id
 
     };
@@ -474,10 +475,10 @@ export default {
         }
         if (proxy.$parent.editComment === 42){
             proxy.$parent.focusedComment = null
-            proxy.$parent.audit.comments.pop()
+            proxy.$parent.$parent.audit.comments.pop()
         }
         proxy.fieldHighlighted = fieldName
-        proxy.$parent.audit.comments.push(comment)
+        proxy.$parent.$parent.audit.comments.push(comment)
         proxy.$parent.editComment = 42
         proxy.focusComment(comment)
     };
@@ -494,6 +495,7 @@ export default {
     const deleteComment =  (comment) => {
         AuditService.deleteComment(auditId.value, comment._id)
         .then(() => {
+            console.log(proxy.$parent)
             if (proxy.$parent.focusedComment === comment._id)
                 fieldHighlighted = ""
         })
@@ -563,16 +565,16 @@ export default {
     };
 
     const numberOfFilteredComments = () => {
-        let count = proxy.$parent.audit.comments.length
+        let count = proxy.$parent.$parent.audit.comments.length
         if (proxy.$parent.commentsFilter === 'active')
-            count = proxy.$parent.audit.comments.filter(e => !e.resolved).length
+            count = proxy.$parent.$parent.audit.comments.filter(e => !e.resolved).length
         else if (proxy.$parent.commentsFilter === 'resolved')
-            count = proxy.$parent.audit.comments.filter(e => e.resolved).length
+            count = proxy.$parent.$parent.audit.comments.filter(e => e.resolved).length
         
         if (count === 1)
-            return `${count} ${$t('item')}`
+            return `${count} ${t('item')}`
         else
-            return `${count} ${$t('items')}`
+            return `${count} ${t('items')}`
     };
 
     const unsavedChanges = () => {
@@ -735,6 +737,7 @@ export default {
       auditId,
       findingId,
       finding,
+      user,
       findingOrig,
       selectedTab,
       proofsTabVisited,
@@ -777,7 +780,17 @@ export default {
       syncEditors,
       updateOrig,
       unsavedChanges,
-      requiredFieldsEmpty
+      requiredFieldsEmpty,
+      toggleCommentView,
+      numberOfFilteredComments,
+      createComment,
+      displayComment,
+      deleteComment,
+      updateComment,
+      focusComment,
+      removeReplyFromComment,
+      cancelEditComment,
+      displayHighlightWarning
     };
   }
 }
