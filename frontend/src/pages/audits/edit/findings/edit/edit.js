@@ -11,8 +11,13 @@ import DataService from '@/services/data';
 import UserService from '@/services/user';
 import VulnService from '@/services/vulnerability';
 import Utils from '@/services/utils';
-
-import { $t } from '@/boot/i18n'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick, getCurrentInstance } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
+import _ from 'lodash';
+import settings from '@/boot/settings';
+import { socket } from '@/boot/socketio';
+import { user } from '@/services/user';
 
 export default {
   props: {
@@ -257,18 +262,18 @@ export default {
 
         // *** Comments Handling ***
 
-        toggleCommentView: function() {
-            Utils.syncEditors(this.$refs)
-            this.$parent.commentMode = !this.$parent.commentMode
-            if (this.$parent.commentMode) {
-                this.$parent.commentSplitRatio = 80
-                this.$parent.commentSplitLimits = [80, 80]
-            }
-            else {
-                this.$parent.commentSplitRatio = 100
-                this.$parent.commentSplitLimits = [100, 100]
-            }
-        },
+    const toggleCommentView = () => {
+        Utils.syncEditors(proxy.$refs)
+        proxy.$parent.$parent.commentMode = !proxy.$parent.$parent.commentMode
+        if (proxy.$parent.$parent.commentMode) {
+            proxy.$parent.$parent.commentSplitRatio = 80
+            proxy.$parent.$parent.commentSplitLimits = [80, 80]
+        }
+        else {
+            proxy.$parent.$parent.commentSplitRatio = 100
+            proxy.$parent.$parent.commentSplitLimits = [100, 100]
+        }
+    };
 
         focusComment: function(comment) {
             if (
@@ -301,20 +306,20 @@ export default {
 
         // Go to definition tab and scrollTo field
         if (selectedTab !== 'definition' && (definitionFields.includes(comment.fieldName) || comment.fieldName.startsWith('field-'))) {
-            selectedTab = "definition"
+            selectedTab.value = "definition"
         }
         else if (selectedTab !== 'poc' && comment.fieldName === 'pocField') {
-            selectedTab = "proofs"
+            selectedTab.value = "proofs"
         }
         else if (selectedTab !== 'details' && detailsFields.includes(comment.fieldName)) {
-            selectedTab = "details"
+            selectedTab.value = "details"
         }
         let checkCount = 0
         const intervalId = setInterval(() => {
             checkCount++
             if (document.getElementById(comment.fieldName)) {
                 clearInterval(intervalId)
-                this.$nextTick(() => {
+                nextTick(() => {
                     document.getElementById(comment.fieldName).scrollIntoView({block: "center"})
                 })
             }
@@ -323,32 +328,33 @@ export default {
             }
         }, 100)
 
-        fieldHighlighted = comment.fieldName
+        fieldHighlighted.value = comment.fieldName
         proxy.$parent.focusedComment = comment._id
 
         },
 
-        createComment: function(fieldName) {
-            let comment = {
-                _id: 42,
-                findingId: this.findingId,
-                fieldName: fieldName,
-                authorId: UserService.user.id,
-                author: {
-                    firstname: UserService.user.firstname,
-                    lastname: UserService.user.lastname
-                },
-                text: "" 
-            }
-            if (this.$parent.editComment === 42){
-                this.$parent.focusedComment = null
-                this.$parent.audit.comments.pop()
-            }
-            this.fieldHighlighted = fieldName
-            this.$parent.audit.comments.push(comment)
-            this.$parent.editComment = 42
-            this.focusComment(comment)
-        },
+    const createComment = (fieldName) => {
+        let comment = {
+            _id: 42,
+            findingId: findingId.value,
+            fieldName: fieldName,
+            authorId: user.value.id,
+            author: {
+                firstname: user.value.firstname,
+                lastname: user.value.lastname
+            },
+            text: "" 
+        }
+        if (proxy.$parent.editComment === 42){
+            proxy.$parent.focusedComment = null
+            proxy.$parent.$parent.audit.comments.pop()
+        }
+        proxy.fieldHighlighted = fieldName
+        proxy.$parent.$parent.audit.comments.push(comment)
+        proxy.$parent.editComment = 42
+        proxy.focusComment(comment)
+    };
+
 
         cancelEditComment: function(comment) {
             this.$parent.editComment = null
@@ -358,21 +364,22 @@ export default {
             }
         },
 
-        deleteComment: function(comment) {
-            AuditService.deleteComment(this.auditId, comment._id)
-            .then(() => {
-                if (this.$parent.focusedComment === comment._id)
-                    this.fieldHighlighted = ""
+    const deleteComment =  (comment) => {
+        AuditService.deleteComment(auditId.value, comment._id)
+        .then(() => {
+            console.log(proxy.$parent)
+            if (proxy.$parent.focusedComment === comment._id)
+                fieldHighlighted = ""
+        })
+        .catch((err) => {
+            Notify.create({
+                message: err.response.data.datas,
+                color: 'negative',
+                textColor:'white',
+                position: 'top-right'
             })
-            .catch((err) => {
-                Notify.create({
-                    message: err.response.data.datas,
-                    color: 'negative',
-                    textColor:'white',
-                    position: 'top-right'
-                })
-            })
-        },
+        })
+    };
 
         updateComment: function(comment) {
             if (comment.textTemp)
@@ -430,16 +437,16 @@ export default {
         },
 
     const numberOfFilteredComments = () => {
-        let count = proxy.$parent.audit.comments.length
+        let count = proxy.$parent.$parent.audit.comments.length
         if (proxy.$parent.commentsFilter === 'active')
-            count = proxy.$parent.audit.comments.filter(e => !e.resolved).length
+            count = proxy.$parent.$parent.audit.comments.filter(e => !e.resolved).length
         else if (proxy.$parent.commentsFilter === 'resolved')
-            count = proxy.$parent.audit.comments.filter(e => e.resolved).length
+            count = proxy.$parent.$parent.audit.comments.filter(e => e.resolved).length
         
         if (count === 1)
-            return `${count} ${$t('item')}`
+            return `${count} ${t('item')}`
         else
-            return `${count} ${$t('items')}`
+            return `${count} ${t('items')}`
     };
 
     const unsavedChanges = () => {
@@ -602,6 +609,7 @@ export default {
       auditId,
       findingId,
       finding,
+      user,
       findingOrig,
       selectedTab,
       proofsTabVisited,
@@ -644,7 +652,17 @@ export default {
       syncEditors,
       updateOrig,
       unsavedChanges,
-      requiredFieldsEmpty
+      requiredFieldsEmpty,
+      toggleCommentView,
+      numberOfFilteredComments,
+      createComment,
+      displayComment,
+      deleteComment,
+      updateComment,
+      focusComment,
+      removeReplyFromComment,
+      cancelEditComment,
+      displayHighlightWarning
     };
   }
 }

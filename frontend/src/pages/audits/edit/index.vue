@@ -343,7 +343,9 @@
 	  const frontEndAuditState = ref(Utils.AUDIT_VIEW_STATE.EDIT);
 	  const AUDIT_VIEW_STATE = Utils.AUDIT_VIEW_STATE;
 	  const tabAttach = ref([{ isAttachement: false }]);
-  
+	  const commentMode = ref(false)
+	  const editComment = ref("")
+	  const editReply = ref("")
 	  const generalUsers = computed(() => users.value.filter(user => user.menu === 'general'));
 	  const networkUsers = computed(() => users.value.filter(user => user.menu === 'network'));
 	  const findingUsers = computed(() => {
@@ -603,11 +605,9 @@
 	  };
   
 	  const generateReport = async () => {
-		  var data = {};
-		  data.isAttachement = false
-		  AuditService.generateAuditReport(audit._id, data)
-		  .then(msg => {
-			  var blob = new Blob([Uint8Array.from(atob(msg.data.datas), c => c.charCodeAt(0))], {type: "application/octet-stream"});
+		  AuditService.generateAuditReport(audit._id)
+		  .then(response => {
+			  var blob = new Blob([response.data], {type: "application/octet-stream"});
 			  var link = document.createElement('a');
 			  link.href = window.URL.createObjectURL(blob);
 			  const title = audit.name.concat('_','report','.docx')
@@ -626,8 +626,8 @@
 		  .catch( async err => {
 			  if (err.response && err.response.data) {
 				  var blob = new Blob([err.response.data], {type: "application/json"})
-				  var blobData = await this.BlobReader(blob)
-				  message = JSON.parse(blobData).datas
+				  var blobData = BlobReader(blob)
+				  const message = JSON.parse(blobData).datas
 			  }
 			  Notify.create({
 				  message: "Error generating report: " + err,
@@ -662,6 +662,7 @@
 		settings,
 		users,
 		user,
+		commentMode,
 		audit,
 		sections,
 		splitterRatio,
