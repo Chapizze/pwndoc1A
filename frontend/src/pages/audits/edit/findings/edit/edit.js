@@ -1,5 +1,4 @@
-import { Notify, Dialog, QSpinnerGears } from 'quasar';
-
+import { Notify, Dialog, QSpinnerGears, QSplitter } from 'quasar';
 import BasicEditor from 'components/editor';
 import Breadcrumb from 'components/breadcrumb';
 import CvssCalculator from 'components/cvsscalculator'
@@ -15,7 +14,7 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick, g
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import _ from 'lodash';
-import settings from '@/boot/settings';
+import {settings} from '@/boot/settings';
 import { socket } from '@/boot/socketio';
 import { user } from '@/services/user';
 
@@ -610,6 +609,7 @@ export default {
       findingId,
       finding,
       user,
+      settings,
       findingOrig,
       selectedTab,
       proofsTabVisited,

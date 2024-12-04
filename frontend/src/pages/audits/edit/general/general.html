@@ -79,12 +79,12 @@ buttons
                     options-sanitize
                     use-input
                     outlined
-                    :rules="($settings.report.public.requiredFields.company) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="(settings?.report?.public?.requiredFields.company) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT"
                     >
                         <template v-slot:label>
-                            {{$t('company')}} <span v-if="$settings.report.public.requiredFields.company" class="text-red">*</span>
+                            {{t('company')}} <span v-if="settings?.report?.public?.requiredFields?.company" class="text-red">*</span>
                         </template>
                     </q-select>
                     <q-select
@@ -100,12 +100,12 @@ buttons
                     clearable
                     options-sanitize
                     outlined
-                    :rules="($settings.report.public.requiredFields.client) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="(settings?.report?.public?.requiredFields.client) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT"
                     >
                         <template v-slot:label>
-                            {{$t('client')}} <span v-if="$settings.report.public.requiredFields.client" class="text-red">*</span>
+                            {{t('client')}} <span v-if="settings?.report?.public?.requiredFields?.client" class="text-red">*</span>
                         </template>
                     </q-select>
                     <q-select 
@@ -146,7 +146,7 @@ buttons
                         </template>
                     </q-select>
                     <q-select 
-                    v-if="$settings.reviews.enabled"
+                    v-if="settings?.reviews?.enabled"
                     class="col-md-12 col-12"
                     :label="$t('reviewers')"
                     stack-label
@@ -185,7 +185,7 @@ buttons
                     class="col-md-4 col-12"
                     label-slot
                     v-model="audit.date_start"
-                    :rules="($settings.report.public.requiredFields.dateStart) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="(settings?.report?.public?.requiredFields?.dateStart) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     outlined 
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
@@ -197,7 +197,7 @@ buttons
                             </q-icon>
                         </template>
                         <template v-slot:label>
-                            {{$t('startDate')}} <span v-if="$settings.report.public.requiredFields.dateStart" class="text-red">*</span>
+                            {{t('startDate')}} <span v-if="settings?.report?.public?.requiredFields?.dateStart" class="text-red">*</span>
                         </template>
                     </q-input>
                     <q-input
@@ -205,7 +205,7 @@ buttons
                     class="col-md-4 col-12"
                     label-slot
                     v-model="audit.date_end"
-                    :rules="($settings.report.public.requiredFields.dateEnd) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="(settings?.report?.public?.requiredFields?.dateEnd) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     outlined
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
@@ -217,7 +217,7 @@ buttons
                             </q-icon>
                         </template>
                         <template v-slot:label>
-                            {{$t('endDate')}} <span v-if="$settings.report.public.requiredFields.dateEnd" class="text-red">*</span>
+                            {{t('endDate')}} <span v-if="settings?.report?.public?.requiredFields?.dateEnd" class="text-red">*</span>
                         </template>
                     </q-input>
                     <q-input
@@ -225,7 +225,7 @@ buttons
                     class="col-md-4 col-12"
                     label-slot
                     v-model="audit.date"
-                    :rules="($settings.report.public.requiredFields.dateReport) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                    :rules="(settings?.report?.public?.requiredFields?.dateReport) ? [val => !!val || t('fieldIsRequired')] : ['']"
                     lazy-rules="ondemand"
                     outlined
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
@@ -237,7 +237,7 @@ buttons
                             </q-icon>
                         </template>
                         <template v-slot:label>
-                            {{$t('reportingDate')}} <span v-if="$settings.report.public.requiredFields.dateReport" class="text-red">*</span>
+                            {{t('reportingDate')}} <span v-if="settings?.report?.public?.requiredFields?.dateReport" class="text-red">*</span>
                         </template>
                     </q-input>
                 </div>
@@ -248,7 +248,7 @@ buttons
                 ref="scopeField"
                 :label="$t('auditScope')" 
                 v-model="audit.scope" 
-                :rules="($settings.report.public.requiredFields.scope) ? [val => !!val || $t('fieldIsRequired')] : ['']"
+                :rules="(settings?.report?.public?.requiredFields?.scope) ? [val => !!val || t('fieldIsRequired')] : ['']"
                 :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT"/>
             </q-card-section>
             <q-card-section>
