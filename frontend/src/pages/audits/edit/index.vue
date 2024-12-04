@@ -228,12 +228,12 @@
 					  </q-item-section>
 					</q-item>
 					<q-list no-border>
-						<div v-for="finding of categoryFindings.findings" :key="finding._id">
+						<div v-for="finding of categoryFindings.findings" :key="finding._id" :style="`--active-bg-color: ${lighterFindingColor(finding)}`">
 						  <q-item
 							dense
 							class="cursor-pointer"
 							:to="'/audits/'+auditId+'/findings/'+finding._id"
-							active-class="custom-active-item"
+							active-class="active-background"
 						  >
 							<q-item-section side v-if="!categoryFindings.sortOption.sortAuto && frontEndAuditState === AUDIT_VIEW_STATE.EDIT">
 							  <q-icon name="mdi-arrow-split-horizontal" class="cursor-pointer handle" color="grey" />
@@ -357,35 +357,59 @@
 	  const sectionUsers = computed(() => users.value.filter(user => user.menu === 'editSection'));
   
 	  const currentAuditType = computed(() => auditTypes.value.find(e => e.name === audit.auditType));
+
+	  const lightenColor = (color, percent) => {
+		const num = parseInt(color.replace("#", ""), 16),
+		amt = Math.round(2.55 * percent),
+		R = (num >> 16) + amt,
+		G = (num >> 8 & 0x00FF) + amt,
+		B = (num & 0x0000FF) + amt;
+		return `#${(0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1)}`;
+    };
+
+    const lighterFindingColor = (finding) => lightenColor(getFindingColor(finding), 70);
   
 	  const getFindingColor = (finding) => {
-		switch (finding.severity) {
-		  case 4:
-			return "green";
-		  case 3:
-			return "orange";
-		  case 2:
-			return "red";
-		  case 1:
-			return "black";
-		  default:
-			return "green";
-		}
+			let severity = getFindingSeverity(finding)
+
+			if(settings.report) {
+				const severityColorName = `${severity.toLowerCase()}Color`;
+				const cvssColors = settings.report.public.cvssColors;
+
+				return cvssColors[severityColorName] || cvssColors.noneColor;
+			} else {
+				switch(severity) {
+					case "Low": 
+						return "green";
+					case "Medium":
+						return "orange";
+					case "High":
+						return "red";
+					case "Critical":
+						return "black";
+					default:
+						return "blue";
+				}
+			}
 	  };
   
 	  const getFindingSeverity = (finding) => {
-		switch (finding.severity) {
-		  case 4:
-			return "Minor";
-		  case 3:
-			return "Medium";
-		  case 2:
-			return "Serious";
-		  case 1:
-			return "Critical";
-		  default:
-			return "Minor";
-		}
+			let severity = "None"
+			let cvss = CVSS31.calculateCVSSFromVector(finding.cvssv3)
+			if (cvss.success) {
+				severity = cvss.baseSeverity
+
+				let category = finding.category || "No Category"
+				let sortOption = audit.sortFindings.find(e => e.category === category)
+
+				if (sortOption) {
+					if (sortOption.sortValue === "cvssEnvironmentalScore")
+						severity = cvss.environmentalSeverity
+					else if (sortOption.sortValue === "cvssTemporalScore")
+						severity = cvss.temporalSeverity
+				}
+			}
+			return severity
 	  };
   
 	  const getMenuSection = () => {
@@ -693,7 +717,8 @@
 		getSectionIcon,
 		getAuditTypes,
 		BlobReader,
-		getSortOptions
+		getSortOptions,
+		lighterFindingColor
 	  };
 	},
 	components: {
@@ -766,6 +791,18 @@
   body.body--dark .custom-active-item {
 	/* Dark mode: very subtle light gray with some opacity */
 	background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .custom-q-item {
+	color: black !important;
+  }
+  .custom-q-item .q-item__section {
+	color: black !important;
+  }
+
+  .active-background {
+	color: black !important;
+	background-color: var(--active-bg-color);
   }
   </style>
   

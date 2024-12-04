@@ -1,10 +1,10 @@
 import { Notify, Dialog, QSpinnerGears, QSplitter } from 'quasar';
 import BasicEditor from 'components/editor';
 import Breadcrumb from 'components/breadcrumb';
+import TextareaArray from 'components/textarea-array';
+import CustomFields from 'components/custom-fields';
 import CvssCalculator from 'components/cvsscalculator'
-import TextareaArray from 'components/textarea-array'
-import CustomFields from 'components/custom-fields'
-import AttachmentService from '@/services/attachment'
+import AttachmentService from '@/services/attachment';
 import AuditService from '@/services/audit';
 import DataService from '@/services/data';
 import UserService from '@/services/user';
@@ -28,7 +28,8 @@ export default {
     BasicEditor,
     Breadcrumb,
     TextareaArray,
-    CustomFields
+    CustomFields,
+    CvssCalculator,
   },
   setup(props) {
     const { t } = useI18n();
@@ -293,7 +294,7 @@ export default {
 
         if (comment.sectionId && sectionId.value !== comment.sectionId) {
             proxy.$router.replace({name: 'editSection', params: {
-                auditId: this.auditId, 
+                auditId: auditId.value, 
                 sectionId: comment.sectionId, 
                 comment: comment
             }})
@@ -449,36 +450,45 @@ export default {
     };
 
     const unsavedChanges = () => {
-      if (finding.title !== findingOrig.title)
-        return true;
-      if ((finding.vulnType || findingOrig.vulnType) && finding.vulnType !== findingOrig.vulnType)
-        return true;
-      if ((finding.issueBackground || findingOrig.issueBackground) && finding.issueBackground !== findingOrig.issueBackground)
-        return true;
-      if ((finding.CvssScoreAma || findingOrig.CvssScoreAma) && finding.CvssScoreAma !== findingOrig.CvssScoreAma)
-        return true;
-      if (!_.isEqual(finding.remediationBackground, findingOrig.remediationBackground))
-        return true;
-      if (!_.isEqual(finding.customFields, findingOrig.customFields))
-        return true;
-      if ((finding.request || findingOrig.request) && finding.request !== findingOrig.request)
-        return true;
-      if ((finding.response || findingOrig.response) && finding.response !== findingOrig.response)
-        return true;
-      if ((finding.cvssv3 || findingOrig.cvssv3) && finding.cvssv3 !== findingOrig.cvssv3)
-        return true;
-      if ((finding.urgency || findingOrig.urgency) && finding.urgency !== findingOrig.urgency)
-        return true;
-      if ((finding.severity || findingOrig.severity) && finding.severity !== findingOrig.severity)
-        return true;
-      if ((finding.remediationDetails || findingOrig.remediationDetails) && finding.remediationDetails !== findingOrig.remediationDetails)
-        return true;
-      if ((finding.issueDetails || findingOrig.issueDetails) && finding.issueDetails !== findingOrig.issueDetails)
-        return true;
-      if (finding.status !== findingOrig.status)
-        return true;
+      if (overrideLeaveCheck)
+        return false
 
-      return false;
+    if (finding.title !== findingOrig.title)
+        return true
+    if ((finding.vulnType || findingOrig.vulnType) && finding.vulnType !== findingOrig.vulnType)
+        return true
+    if ((finding.description || findingOrig.description) && finding.description !== findingOrig.description)
+        return true
+    if ((finding.observation || findingOrig.observation) && finding.observation !== findingOrig.observation)
+        return true
+    if (!_.isEqual(finding.references, findingOrig.references))
+        return true
+    if (!_.isEqual(finding.customFields, findingOrig.customFields))
+        return true
+
+    if ((finding.poc || findingOrig.poc) && finding.poc !== findingOrig.poc)
+        return true
+    
+    if ((finding.scope || findingOrig.scope) && finding.scope !== findingOrig.scope)
+        return true
+    if ((finding.cvssv3 || findingOrig.cvssv3) && finding.cvssv3 !== findingOrig.cvssv3)
+        return true
+    if ((finding.remediationComplexity || findingOrig.remediationComplexity) && finding.remediationComplexity !== findingOrig.remediationComplexity)
+        return true
+    if ((finding.priority || findingOrig.priority) && finding.priority !== findingOrig.priority)
+        return true
+    if ((finding.remediation || findingOrig.remediation) && finding.remediation !== findingOrig.remediation)
+        return true
+
+    if (finding.status !== findingOrig.status)
+        return true
+    
+    if ((finding.retestStatus || findingOrig.retestStatus) && finding.retestStatus !== findingOrig.retestStatus)
+        return true
+    if ((finding.retestDescription || findingOrig.retestDescription) && finding.retestDescription !== findingOrig.retestDescription)
+        return true
+
+    return false
     };
 
     const displayHighlightWarning = () => {
@@ -662,7 +672,8 @@ export default {
       focusComment,
       removeReplyFromComment,
       cancelEditComment,
-      displayHighlightWarning
+      displayHighlightWarning,
+      toggleSplitView
     };
   }
 }
