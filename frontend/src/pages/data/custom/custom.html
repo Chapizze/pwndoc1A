@@ -587,7 +587,7 @@
                                 <q-toolbar>
                                     <div class="text-grey-8">{{t('listOfCategories')}}</div>
                                     <q-space />
-                                    <q-btn v-if="isAllowed('vulnerability-categories:update')" flat color="primary" icon="fa fa-edit" @click="editCategory = true; editCategories = $_.cloneDeep(vulnCategories)">
+                                    <q-btn v-if="isAllowed('vulnerability-categories:update')" flat color="primary" icon="fa fa-edit" @click="editCategory = true; editCategories = _.cloneDeep(vulnCategories)">
                                         <q-tooltip anchor="bottom middle" self="center left" :delay="500" content-class="text-bold">{{t('tooltip.edit')}}</q-tooltip> 
                                     </q-btn>
                                 </q-toolbar>

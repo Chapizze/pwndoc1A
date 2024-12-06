@@ -316,7 +316,7 @@ export default {
 
     const backupFinding = () => {
       Utils.syncEditors(proxy.$refs);
-      VulnService.backupFinding('eng', finding)
+      VulnService.backupFinding(audit.value.language, finding)
         .then((data) => {
           Notify.create({
             message: data.data.datas,

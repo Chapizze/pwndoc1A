@@ -356,15 +356,15 @@ export default {
 
         const createVulnerabilityCategory = () => {
             cleanErrors();
-            if (!newVulnCat.name)
+            if (!newVulnCat.value.name)
                 errors.vulnCat = "Name required";
             
             if (errors.vulnCat)
                 return;
 
-            DataService.createVulnerabilityCategory(newVulnCat)
+            DataService.createVulnerabilityCategory(newVulnCat.value)
             .then((data) => {
-                newVulnCat = {name: "", sortValue: "cvssScore", sortOrder: "desc", sortAuto: true}
+                newVulnCat.value = {name: "", sortValue: "cvssScore", sortOrder: "desc", sortAuto: true}
                 getVulnerabilityCategories();
                 Notify.create({
                     message: 'Vulnerability category created successfully',
@@ -385,10 +385,10 @@ export default {
 
         const updateVulnCategories = () => {
 
-            DataService.updateVulnerabilityCategories(editCategories)
+            DataService.updateVulnerabilityCategories(editCategories.value)
             .then((data) => {
                 getVulnerabilityCategories()
-                editCategory = false
+                editCategory.value = false
                 Notify.create({
                     message: 'Vulnerability Categories updated successfully',
                     color: 'positive',
@@ -406,20 +406,18 @@ export default {
             })
         }
 
-        const removeCategory = () => {
-            editCategories = editCategories.filter(e => e.name !== vulnCat.name)
+        const removeCategory = (vulnCat) => {
+            editCategories.value = editCategories.value.filter(e => e.name !== vulnCat.name)
         }
 
         const getSortOptions = (category) => {
             var options = [
-                {label: $t('cvssScore'), value: 'cvssScore'},
-                {label: $t('cvssTemporalScore'), value: 'cvssTemporalScore'},
-                {label: $t('cvssEnvironmentalScore'), value: 'cvssEnvironmentalScore'},
-                {label: $t('severity'), value: 'severity'},
-                {label: $t('urgency '), value: 'urgency '}
+                {label: t('cvssScore'), value: 'cvssScore'},
+                {label: t('cvssTemporalScore'), value: 'cvssTemporalScore'},
+                {label: t('cvssEnvironmentalScore'), value: 'cvssEnvironmentalScore'},
             ]
             var allowedFieldTypes = ['date', 'input', 'radio', 'select']
-            customFields.forEach(e => {
+            customFields.value.forEach(e => {
                 if (
                     (e.display === 'finding' || e.display === 'vulnerability') && 
                     (!e.displaySub || e.displaySub === category) && 

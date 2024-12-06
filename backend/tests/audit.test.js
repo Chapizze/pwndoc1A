@@ -12,7 +12,7 @@ module.exports = function(request, app) {
     var audit2Id = ""
     var documentId = ""
     beforeAll(async () => {
-      var response = await request(app).post('/api/users/token').send({username: 'admin', password: 'Admin123'})
+      var response = await request(app).post('/api/users/token').send({username: 'admin', password: 'Adminpassword123'})
       userToken = response.body.datas.token
     })
 

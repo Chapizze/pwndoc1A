@@ -1,44 +1,48 @@
 {
-    "dev": {
-        "port": 5252,
-        "host": "",
-        "database": {
-            "name": "pwndoc",
-            "server": "mongo-pwndoc-dev",
-            "port": "27017"
-        },
-        "login": {
-            "provider": "disabled"
-        }
+  "dev": {
+    "port": 5252,
+    "host": "",
+    "database": {
+      "name": "pwndoc",
+      "server": "mongo-pwndoc-dev",
+      "port": "27017"
     },
-    "prod": {
-        "port": 4242,
-        "host": "",
-        "database": {
-            "name": "pwndoc",
-            "server": "mongo-pwndoc",
-            "port": "27017"
-        },
-        "login": {
-            "provider": "disabled",
-            "issuer": "https://exemple.com",
-            "authorizationURL": "https://exemple.com/as/authorization.oauth2",
-            "tokenURL": "https://exemple.com/as/token.oauth2",
-            "userInfoURL": "https://exemple.com/idp/userinfo.openid",
-            "callbackURL": "https://myserverIP/api/sso",
-            "scope": "openid profile"
-        }
-    },
-    "test": {
-        "port": 6262,
-        "host": "",
-        "database": {
-            "name": "pwndoc",
-            "server": "127.0.0.1",
-            "port": "27017"
-        },
-        "login": {
-            "provider": "disabled"
-        }
+    "login": {
+      "provider": "disabled"
     }
+  },
+  "prod": {
+    "port": 4242,
+    "host": "",
+    "database": {
+      "name": "pwndoc",
+      "server": "mongo-pwndoc",
+      "port": "27017"
+    },
+    "login": {
+      "provider": "disabled",
+      "issuer": "https://exemple.com",
+      "authorizationURL": "https://exemple.com/as/authorization.oauth2",
+      "tokenURL": "https://exemple.com/as/token.oauth2",
+      "userInfoURL": "https://exemple.com/idp/userinfo.openid",
+      "callbackURL": "https://myserverIP/api/sso",
+      "scope": "openid profile"
+    },
+    "jwtSecret": "ca941b1a8693df07fb5d13b3cac7668cfcac089b9804a2611e532e8505ad8fba",
+    "jwtRefreshSecret": "81fe7fe8be5d51faf1330bc42226c228194344e2ceae5a05bf6eca3d4dcdef85"
+  },
+  "test": {
+    "port": 6262,
+    "host": "",
+    "database": {
+      "name": "pwndoc",
+      "server": "127.0.0.1",
+      "port": "27017"
+    },
+    "login": {
+      "provider": "disabled"
+    },
+    "jwtSecret": "5c7076136564ee541043b41c6d7b0f629c5dbb33d6bcbed10f15307493291d61",
+    "jwtRefreshSecret": "1063f1a483fb68227aab7c1addccc1f309ce10e300de4e3bb53730f1d1019d8d"
+  }
 }

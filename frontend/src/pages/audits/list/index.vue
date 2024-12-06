@@ -270,13 +270,12 @@ export default {
     const createAudit = async () => {
       cleanErrors();
       if (!currentAudit.name) errors.name = 'Name required';
-      if (!this.currentAudit.language) errors.language = "Language required";
+      if (!currentAudit.language) errors.language = "Language required";
       if (!currentAudit.auditType) errors.auditType = 'Assessment required';
       if (errors.name || errors.auditType) return;
 
       try {
         const response = await AuditService.createAudit(currentAudit);
-        console.log(response);
         proxy.$refs.createModal.hide();
         proxy.$router.push('/audits/' + response.data.datas.audit._id + '/general');
       } catch (err) {

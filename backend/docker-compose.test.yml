@@ -1,20 +1,11 @@
 version: '3'
 services:
-  mongodb-test:
-    image: mongo:4.2.15
-    container_name: mongo-pwndoc-test
-    volumes:
-      - ./mongo-data-test:/data/db
-    restart: always
-    environment:
-      - MONGO_DB:pwndoc
-    network_mode: host
 
   backend-test:
-    image: yeln4ts/pwndoc:backend-test
+    image: pwndoc/pwndoc:backend-test
     build: 
       context: .
-      dockerfile:  Dockerfile.test
+      dockerfile: Dockerfile.test
     container_name: pwndoc-backend-test
     secrets:
       - clientID
@@ -24,18 +15,15 @@ services:
       - key
       - salt
     volumes:
+      - ./report-templates:/app/report-templates
       - ./tests:/app/tests
       - ./src:/app/src
+      - ./ssl:/app/ssl
       - ./jest.config.js:/app/jest.config.js
-      - ./resources/:/app/resources
+      - ./resources:/app/resources
     environment:
-      API_URL: https://localhost:4242
-    depends_on:
-      - mongodb-test
+      API_URL: https://localhost:5252
     network_mode: host
-
-volumes:
-  mongo-data-test:
 
 secrets:
   clientID:

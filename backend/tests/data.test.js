@@ -13,11 +13,11 @@
       ]
 */
 
-module.exports = function(request, app) {
+module.exports = function (request, app) {
   describe('Data Suite Tests', () => {
     var userToken = '';
     beforeAll(async () => {
-      var response = await request(app).post('/api/users/token').send({username: 'admin', password: 'Admin123'})
+      var response = await request(app).post('/api/users/token').send({ username: 'admin', password: 'Adminpassword123' })
       userToken = response.body.datas.token
     })
 
@@ -27,7 +27,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toHaveLength(0)
       })
@@ -79,7 +79,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(language)
-      
+
         expect(response.status).toBe(422)
       })
 
@@ -93,22 +93,22 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(language)
-      
+
         expect(response.status).toBe(422)
       })
 
       it('Get languages', async () => {
         const expected = [
-          {locale: 'en', language: 'English'},
-          {locale: 'fr', language: 'French'},
-          {locale: 'es', language: 'Espagnol'}
+          { locale: 'en', language: 'English' },
+          { locale: 'fr', language: 'French' },
+          { locale: 'es', language: 'Espagnol' }
         ]
 
         var response = await request(app).get('/api/data/languages')
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toEqual(expect.arrayContaining(expected))
       })
@@ -142,7 +142,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toHaveLength(0)
       })
@@ -153,7 +153,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-        
+
         var templates = response.body.datas
 
         var auditType = {
@@ -167,7 +167,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(auditType)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -177,7 +177,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-        
+
         var templates = response.body.datas
 
         var auditType = {
@@ -191,7 +191,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(auditType)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -201,7 +201,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-        
+
         var templates = response.body.datas
 
         var auditType = {
@@ -215,7 +215,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(auditType)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -225,7 +225,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-        
+
         var templates = response.body.datas
 
         var auditType = {
@@ -237,7 +237,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(auditType)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -247,7 +247,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-        
+
         var templates = response.body.datas
 
         var auditType = {
@@ -259,22 +259,22 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(auditType)
-      
+
         expect(response.status).toBe(422)
       })
 
       it('Get audit types', async () => {
         const expected = [
-          {"hidden": ["network"], "name": "Retest", "sections": [], "templates": [{}], "stage": "retest"},
-          {"hidden": ["network"], "name": "Multi", "sections": [], "templates": [{}], "stage": "multi"},
-          {"hidden": [], "name": "Wifi", "sections": [], "templates": [{}], "stage": "default"},
-          {"hidden": [], "name": "Web", "sections": [], "templates": [{}], "stage": "default"}
+          { "hidden": ["network"], "name": "Retest", "sections": [], "templates": [{}], "stage": "retest" },
+          { "hidden": ["network"], "name": "Multi", "sections": [], "templates": [{}], "stage": "multi" },
+          { "hidden": [], "name": "Wifi", "sections": [], "templates": [{}], "stage": "default" },
+          { "hidden": [], "name": "Web", "sections": [], "templates": [{}], "stage": "default" }
         ]
         var response = await request(app).get('/api/data/audit-types')
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toEqual(expect.arrayContaining(expected))
       })
@@ -308,7 +308,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toHaveLength(0)
       })
@@ -323,7 +323,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(type)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -337,7 +337,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(type)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -351,20 +351,20 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(type)
-      
+
         expect(response.status).toBe(422)
       })
 
       it('Get vulnerability types', async () => {
         const expected = [
-          {"locale": "en", "name": "Internal"},
-          {"locale": "en", "name": "Web"}
+          { "locale": "en", "name": "Internal" },
+          { "locale": "en", "name": "Web" }
         ]
         var response = await request(app).get('/api/data/vulnerability-types')
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toEqual(expect.arrayContaining(expected))
       })
@@ -398,7 +398,7 @@ module.exports = function(request, app) {
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toHaveLength(0)
       })
@@ -413,7 +413,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(section)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -427,7 +427,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(section)
-      
+
         expect(response.status).toBe(201)
       })
 
@@ -441,7 +441,7 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(section)
-      
+
         expect(response.status).toBe(422)
       })
 
@@ -455,52 +455,106 @@ module.exports = function(request, app) {
             `token=JWT ${userToken}`
           ])
           .send(section)
-      
+
         expect(response.status).toBe(422)
       })
 
       it('Get sections', async () => {
         const expected = [
-          {name: 'Attack Scenario', field: 'attack_scenario'},
-          {name: 'But', field: 'goal'},
+          { name: 'Attack Scenario', field: 'attack_scenario' },
+          { name: 'But', field: 'goal' },
         ]
         var response = await request(app).get('/api/data/sections')
           .set('Cookie', [
             `token=JWT ${userToken}`
           ])
-      
+
         expect(response.status).toBe(200)
         expect(response.body.datas).toEqual(expect.arrayContaining(expected))
       })
+    }),
 
-      //it('Should not delete nonexistent section', async () => {
-      //  var response = await request(app).delete('/api/data/sections/attack_scenario/ru')
-      //    .set('Cookie', [
-      //      `token=JWT ${userToken}`
-      //    ])
-      //  expect(response.status).toBe(404)
-      //})
+      describe('Vuln categories CRUD operations', () => {
+        it('Get vuln categories', async done => {
+          var response = await request(app).get('/api/data/vulnerability-categories')
+            .set('Cookie', [
+              `token=JWT ${userToken}`
+            ])
 
-      //it('Delete section', async () => {
-      //  const expected = [
-      //    {locale: "en", name: 'Attack Scenario', field: 'attack_scenario'},
-      //    {locale: "fr", name: 'Scenario', field: 'attack_scenario'},
-      //    {locale: "en", name: 'Goal', field: 'goal'},
-      //  ]
+          expect(response.status).toBe(200)
+          expect(response.body.datas).toHaveLength(0)
+        })
 
-      //  var response = await request(app).delete('/api/data/sections/but/fr')
-      //    .set('Cookie', [
-      //      `token=JWT ${userToken}`
-      //    ])
-      //  expect(response.status).toBe(200)
+        it('Create vuln category', async () => {
 
-      //  var response = await request(app).get('/api/data/sections')
-      //    .set('Cookie', [
-      //      `token=JWT ${userToken}`
-      //    ])
-      //  expect(response.body.datas).toHaveLength(3)
-      //  expect(response.body.datas).toEqual(expect.arrayContaining(expected))
-      //})
-    })
+
+          var category1 = {
+            name: "[CWE-285] Improper Authorization",
+            sortValue: "cvssScore",
+            sortOrder: "desc",
+            sortAuto: true
+          }
+
+          var response = await request(app).post('/api/data/vulnerability-categories')
+            .set('Cookie', [
+              `token=JWT ${userToken}`
+            ])
+            .send(category1)
+
+          expect(response.status).toBe(201)
+        })
+
+        it('Get vuln categories', async done => {
+
+          var expected = [{
+            name: "[CWE-285] Improper Authorization",
+            sortValue: "cvssScore",
+            sortOrder: "desc",
+            sortAuto: true
+          }]
+
+          var response = await request(app).get('/api/data/vulnerability-categories')
+            .set('Cookie', [
+              `token=JWT ${userToken}`
+            ])
+
+
+          expect(response.status).toBe(200)
+          expect(response.body.datas).toHaveLength(1)
+          expect(response.body.datas).toEqual(expect.arrayContaining(expected))
+
+          done()
+        })
+
+      })
+
+    //it('Should not delete nonexistent section', async () => {
+    //  var response = await request(app).delete('/api/data/sections/attack_scenario/ru')
+    //    .set('Cookie', [
+    //      `token=JWT ${userToken}`
+    //    ])
+    //  expect(response.status).toBe(404)
+    //})
+
+    //it('Delete section', async () => {
+    //  const expected = [
+    //    {locale: "en", name: 'Attack Scenario', field: 'attack_scenario'},
+    //    {locale: "fr", name: 'Scenario', field: 'attack_scenario'},
+    //    {locale: "en", name: 'Goal', field: 'goal'},
+    //  ]
+
+    //  var response = await request(app).delete('/api/data/sections/but/fr')
+    //    .set('Cookie', [
+    //      `token=JWT ${userToken}`
+    //    ])
+    //  expect(response.status).toBe(200)
+
+    //  var response = await request(app).get('/api/data/sections')
+    //    .set('Cookie', [
+    //      `token=JWT ${userToken}`
+    //    ])
+    //  expect(response.body.datas).toHaveLength(3)
+    //  expect(response.body.datas).toEqual(expect.arrayContaining(expected))
+    //})
   })
 }

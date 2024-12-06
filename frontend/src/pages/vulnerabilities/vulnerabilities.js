@@ -67,7 +67,7 @@ export default {
 
     const vulnTypesLang = computed(() => vulnTypes.value.filter(type => type.locale === currentLanguage.value));
 
-    const computedVulnerabilities = computed(() => {
+   /* const computedVulnerabilities = computed(() => {
       const result = [];
       vulnerabilities.value.forEach(vuln => {
         for (let i = 0; i < vuln.details.length; i++) {
@@ -77,7 +77,7 @@ export default {
         }
       });
       return result;
-    });
+    });*/
 
     const vulnCategoriesOptions = computed(() => {
       const result = vulnCategories.value.map(cat => cat.name);
@@ -480,7 +480,7 @@ export default {
       customFields,
       dtHeaders,
       vulnTypesLang,
-      computedVulnerabilities,
+     // computedVulnerabilities,
       vulnCategoriesOptions,
       getLanguages,
       getCustomFields,

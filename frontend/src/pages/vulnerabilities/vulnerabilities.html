@@ -7,7 +7,7 @@
         <q-table
             class="sticky-header-table"
             :columns="dtHeaders"
-            :rows="computedVulnerabilities"
+            :rows="vulnerabilities"
             :filter="search"
             :filter-method="customFilter"
             :pagination.sync="pagination"
@@ -128,8 +128,8 @@
             </template>          
             
             <template v-slot:bottom="scope">
-                <span v-if="computedVulnerabilities.length === 1">{{filteredRowsCount}} / 1 {{t('vulnerabilityNum1')}} ({{t('total')}}: {{vulnerabilities.length}})</span>                
-                <span v-else>{{filteredRowsCount}} / {{computedVulnerabilities.length}} {{t('vulnerabilitiesNums')}} ({{t('total')}}: {{vulnerabilities.length}})</span>    
+                <span v-if="vulnerabilities.length === 1">{{filteredRowsCount}} / 1 {{t('vulnerabilityNum1')}} ({{t('total')}}: {{vulnerabilities.length}})</span>                
+                <span v-else>{{filteredRowsCount}} / {{vulnerabilities.length}} {{t('vulnerabilitiesNums')}} ({{t('total')}}: {{vulnerabilities.length}})</span>    
                 <q-space />
                 <span>{{t('resultsPerPage')}}</span>
                 <q-select

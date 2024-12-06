@@ -45,7 +45,7 @@ export default {
     ]);
     const filteredRowsCount = ref(0);
     const search = reactive({ title: '', category: '' });
-    const languages = ref([{ locale: 'eng', language: 'English' }]);
+    const languages = ref([{ locale: 'en', language: 'English' }]);
     const dtLanguage = ref('');
     const currentExpand = ref(-1);
     const vulnCategories = ref([]);
@@ -69,6 +69,9 @@ export default {
       try {
         const data = await DataService.getLanguages();
         languages.value = data.data.datas;
+        if (languages.value.length > 0) {
+          dtLanguage.value = languages.value[0].locale
+        }
       } catch (err) {
         console.log(err);
       }

@@ -1,6 +1,6 @@
 /* 
   4 Users at the end:
-    admin:Admin123 (admin)
+    admin:Adminpassword123 (admin)
     user2:User1234 (user)
     report:Report123 (report)
     reviewer:Reviewer123 (reviewer)
@@ -20,7 +20,7 @@ module.exports = function(request, app) {
       })
 
       it('Authenticate with nonexistent user', async () => {
-        var response = await request(app).post('/api/users/token').send({username: 'admin', password: 'Admin123'})
+        var response = await request(app).post('/api/users/token').send({username: 'admin', password: 'Adminpassword123'})
         
         expect(response.status).toBe(401)
       })
@@ -40,7 +40,7 @@ module.exports = function(request, app) {
       it('Create first user when it already exists', async () => {
         var user = {
           username: 'admin2',
-          password: 'Admin123',
+          password: 'Adminpassword123',
           firstname: 'Admin2',
           lastname: 'Istrator2'
         }
@@ -195,8 +195,8 @@ module.exports = function(request, app) {
 
         var user = {
           currentPassword: "Password1",
-          newPassword: 'Admin123',
-          confirmPassword: 'Admin123',
+          newPassword: 'Adminpassword123',
+          confirmPassword: 'Adminpassword123',
           firstname: 'Admin2'
         }
         var response = await request(app).put('/api/users/me')

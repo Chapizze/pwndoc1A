@@ -143,6 +143,7 @@ AuditSchema.statics.getAudits = (isAdmin, userId, filters) => {
 // Get Audit with ID to generate report
 AuditSchema.statics.getAudit = (isAdmin, auditId, userId) => {
     return new Promise((resolve, reject) => {
+        console.log('sdd')
         var query = Audit.findById(auditId)
         if (!isAdmin)
             query.or([{creator: userId}, {collaborators: userId}, {reviewers: userId}])
@@ -165,6 +166,7 @@ AuditSchema.statics.getAudit = (isAdmin, auditId, userId) => {
         query.populate('comments.replies.author', 'username firstname lastname')
         query.exec()
         .then(async(row) => {
+            console.log(row)
             if (!row)
                 throw({fn: 'NotFound', message: 'Audit not found or Insufficient Privileges'})
             else{
@@ -178,8 +180,11 @@ AuditSchema.statics.getAudit = (isAdmin, auditId, userId) => {
         .catch((err) => {
             if (err.name === "CastError")
                 reject({fn: 'BadParameters', message: 'Bad Audit Id'})
-            else
+            else{ 
+                console.log(err)
                 reject(err)
+            }
+                
         })
     })
 }
