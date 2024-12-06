@@ -1,7 +1,7 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
 
 export default {
-  getReviewers: function() {
-    return Vue.prototype.$axios.get(`users/reviewers`)
+  getReviewers: async () => {
+    return axiosInstance.get(`users/reviewers`)
   }
 }

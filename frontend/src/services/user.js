@@ -1,121 +1,140 @@
-var jwtDecode = require('jwt-decode');
-import Vue from 'vue';
-import User from '@/services/user';
+import { ref } from 'vue';
+import jwtDecode from 'jwt-decode';
+import { axiosInstance } from '../boot/axios';
 
-import Router from '@/router'
 
-export default {
-    user: {
-        username: "",
-        role: "",
-        firstname: "",
-        lastname: "",
-        totpEnabled: false,
-        roles: ""
-    },
+// Determine login route based on SSO configuration
 
-    getToken(username, password, totpToken) {
-        return new Promise((resolve, reject) => {
-            var params = {username: username, password: password, totpToken: totpToken};
-            Vue.prototype.$axios.post(`users/token`, params)
-            .then((response) => {
-                var token = response.data.datas.token;
-                this.user = jwtDecode(token);
-                resolve();
-            })
-            .catch((error) => {
-                reject(error);
-            })
-        })
-    },
+// Create a reactive user store
+const user = ref({
+  username: '',
+  role: '',
+  firstname: '',
+  lastname: '',
+  totpEnabled: false,
+  roles: '',
+});
 
-    refreshToken() {
-        return new Promise((resolve, reject) => {
-            Vue.prototype.$axios.get('users/refreshtoken')
-            .then((response) => {
-                var token = response.data.datas.token;
-                this.user = jwtDecode(token);
-                resolve()
-            })
-            .catch(err => {
-                if (err.response && err.response.data)
-                    reject(err.response.data.datas)
-                else 
-                    reject('Invalid Token')
-            })
-        })
-    },
+const getToken = (username, password, totpToken) => {
+  return new Promise((resolve, reject) => {
+    const params = { username, password, totpToken };
+    axiosInstance
+      .post('users/token', params)
+      .then((response) => {
+        const token = response.data.datas.token;
+        localStorage.setItem('token', token);
+        user.value = jwtDecode(token);
+        resolve();
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
+};
 
-    destroyToken() {
-        Vue.prototype.$axios.delete('users/refreshtoken')
-        .then(() => {
-            User.clear()
-            document.location.href = 'https://exemple.com/idp/startSLO.ping'
-        })
-        .catch(err => {
-            console.log(err)
-        })
-    },
+const refreshToken = () => {
+  return new Promise((resolve, reject) => {
+    axiosInstance
+      .get('users/refreshtoken')
+      .then((response) => {
+        const token = response.data.datas.token;
+        localStorage.setItem('token', token);
+        user.value = jwtDecode(token);
+        resolve();
+      })
+      .catch((err) => {
+        localStorage.removeItem('token');
+        if (err.response && err.response.data) reject(err.response.data.datas);
+        else reject('Invalid Token');
+      });
+  });
+};
 
-    initUser(username, firstname, lastname, password) {
-        return new Promise((resolve, reject) => {
-            var params = {username: username, password: password, firstname: firstname, lastname: lastname};
-            Vue.prototype.$axios.post(`users/init`, params)
-            .then((response) => {
-                var token = response.data.datas.token;
-                this.user = jwtDecode(token);
-                resolve();
-            })
-            .catch((error) => {
-                console.log(error)
-                reject(error);
-            })
-        })
-    },
+const destroyToken = () => {
+  axiosInstance
+    .delete('users/refreshtoken')
+    .then(() => {
+      clearUser();
+      document.location.href = 'https://example.com/SSOlogout';
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+};
 
-    isInit() {
-        return (Vue.prototype.$axios.get(`users/init`, {timeout: 10000}));
-    },
+const initUser = (username, firstname, lastname, password) => {
+  return new Promise((resolve, reject) => {
+    const params = { username, password, firstname, lastname };
+    axiosInstance
+      .post('users/init', params)
+      .then((response) => {
+        const token = response.data.datas.token;
+        user.value = jwtDecode(token);
+        resolve();
+      })
+      .catch((error) => {
+        console.log(error);
+        reject(error);
+      });
+  });
+};
 
-    isAuth() {
-        if (this.user && this.user.username)
-            return true
-        return false
-    },
+const isInit = () => {
+  return axiosInstance.get('users/init', { timeout: 10000 });
+};
 
-    // Reset user variable to default empty
-    clear() {
-        this.user = {
-            username: "",
-            role: "",
-            firstname: "",
-            lastname: "",
-            roles: ""
-        }
-    },
+const isAuth = () => {
+  const token = localStorage.getItem('token');
+  return !!(token && user.value && user.value.username);
+};
 
-    isAllowed(role) {
-        return (this.user.roles && (this.user.roles.includes(role) || this.user.roles === '*'))
-    },
+const clearUser = () => {
+  user.value = {
+    username: '',
+    role: '',
+    firstname: '',
+    lastname: '',
+    roles: '',
+  };
+};
 
-    getProfile: function() {
-        return Vue.prototype.$axios.get(`users/me`);
-    },
+const isAllowed = (role) => {
+  return (user.value.roles && user.value.roles.includes(role) || user.value.roles === '*');
+};
 
-    updateProfile: function(user) {
-        return Vue.prototype.$axios.put(`users/me`, user);
-    },
+const getProfile = () => {
+  return axiosInstance.get('users/me');
+};
 
-    getTotpQrCode: function() {
-        return Vue.prototype.$axios.get(`users/totp`);
-    },
+const updateProfile = (user) => {
+  return axiosInstance.put('users/me', user);
+};
 
-    setupTotp: function(totpToken, totpSecret) {
-        return Vue.prototype.$axios.post(`users/totp`,{totpToken: totpToken, totpSecret: totpSecret});
-    },
+const getTotpQrCode = () => {
+  return axiosInstance.get('users/totp');
+};
 
-    cancelTotp: function(totpToken) {
-        return Vue.prototype.$axios.delete(`users/totp`,{data: {totpToken: totpToken}});
-    },
+const setupTotp = (totpToken, totpSecret) => {
+  return axiosInstance.post('users/totp', { totpToken, totpSecret });
+};
 
+const cancelTotp = (totpToken) => {
+  return axiosInstance.delete('users/totp', { data: { totpToken } });
+};
+
+export  {
+    user,
+    getToken,
+    refreshToken,
+    destroyToken,
+    initUser,
+    isInit,
+    isAuth,
+    clearUser,
+    isAllowed,
+    getProfile,
+    updateProfile,
+    getTotpQrCode,
+    setupTotp,
+    cancelTotp,
 }

@@ -1,19 +1,19 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
 
 export default {
-  getCompanies: function() {
-    return Vue.prototype.$axios.get(`companies`)
+  getCompanies: async () => {
+    return axiosInstance.get('companies')
   },
 
-  createCompany: function(company) {
-    return Vue.prototype.$axios.post('companies', company)
+  createCompany: async (company) => {
+    return axiosInstance.post('companies', company)
   },
 
-  updateCompany: function(companyId, company) {
-    return Vue.prototype.$axios.put(`companies/${companyId}`, company)
+  updateCompany: async (companyId, company) => {
+    return axiosInstance.put(`companies/${companyId}`, company)
   },
 
-  deleteCompany: function(companyId) {
-    return Vue.prototype.$axios.delete(`companies/${companyId}`)
+  deleteCompany: async (companyId) => {
+    return axiosInstance.delete(`companies/${companyId}`)
   }
 }

@@ -1,19 +1,19 @@
-import Vue from 'vue'
+import { axiosInstance } from '../boot/axios'
 
 export default {
-  getCollabs: function() {
-    return Vue.prototype.$axios.get(`users`)
+  getCollabs: async () => {
+    return axiosInstance.get('users')
   },
 
-  createCollab: function(collab) {
-    return Vue.prototype.$axios.post('users', collab)
+  createCollab: async (collab) => {
+    return axiosInstance.post('users', collab)
   },
 
-  updateCollab: function(collabId, collab) {
-    return Vue.prototype.$axios.put(`users/${collabId}`, collab)
+  updateCollab: async (collabId, collab) => {
+    return axiosInstance.put(`users/${collabId}`, collab)
   },
 
-  deleteCollab: function(collabId) {
-    return Vue.prototype.$axios.delete(`users/${collabId}`)
+  deleteCollab: async (collabId) => {
+    return axiosInstance.delete(`users/${collabId}`)
   }
 }

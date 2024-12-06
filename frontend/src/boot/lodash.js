@@ -1,6 +1,7 @@
-// import VueLodash from 'vue-lodash'
 import Lodash from 'lodash'
+import { createApp } from 'vue';
+import App from '../App.vue';
 
-export default ({ Vue }) => {
-    Vue.prototype.$_ = Lodash
-}  
+const app = createApp(App);
+
+app.config.globalProperties.$_ = Lodash;

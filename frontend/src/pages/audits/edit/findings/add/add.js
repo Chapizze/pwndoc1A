@@ -1,17 +1,16 @@
 import { Notify } from 'quasar';
-import { ref, reactive, computed, onMounted, watch, getCurrentInstance } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import _ from 'lodash';
 
 import Breadcrumb from 'components/breadcrumb';
-
 import VulnService from '@/services/vulnerability';
 import AuditService from '@/services/audit';
 import DataService from '@/services/data';
 import Utils from '@/services/utils';
-
-import { $t } from '@/boot/i18n'
+import {settings} from '@/boot/settings';
+import { socket } from '@/boot/socketio';
 
 export default {
   components: {
@@ -28,7 +27,6 @@ export default {
     const { t } = useI18n();
     const route = useRoute();
     const audit = ref({});
-    const proxy = getCurrentInstance();
     const auditId = ref(route.params.auditId);
     const finding = reactive({});
     const findingTitle = ref('');
@@ -76,94 +74,85 @@ export default {
       }
     };
 
-        // Get vulnerabilities by language
-        getVulnerabilities: function() {
-            this.loading = true
-            VulnService.getVulnByLanguage(this.dtLanguage)
-            .then((data) => {
-                this.vulnerabilities = data.data.datas;
-                this.loading = false
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-        },
+    const getVulnerabilities = async () => {
+      loading.value = true;
+      try {
+        const data = await VulnService.getVulnByLanguage(languages.value[0].locale);
+        vulnerabilities.value = data.data.datas;
+        loading.value = false;
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
-        // Get available vulnerability categories
-        getVulnerabilityCategories: function() {
-            DataService.getVulnerabilityCategories()
-            .then((data) => {
-                this.vulnCategories = data.data.datas;
-            })
-            .catch((err) => {
-                console.log(err)
-            })
-        },
+    const getVulnerabilityCategories = async () => {
+      try {
+        const data = await DataService.getVulnerabilityCategories();
+        vulnCategories.value = data.data.datas;
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
-        getDtTitle: function(row) {
-            var index = row.details.findIndex(obj => obj.locale === this.dtLanguage.locale);
-            if (index < 0)
-                return $t('err.notDefinedLanguage');
-            else
-                return row.details[index].title;         
-        },
+    const getDtTitle = (row) => {
+      const index = row.details.findIndex((obj) => obj.locale === dtLanguage.value.locale);
+      if (index < 0) return t('err.notDefinedLanguage');
+      return row.details[index].title;
+    };
 
-        customFilter: function(rows, terms, cols, getCellValue) {
-            var result = rows && rows.filter(row => {
-                var title = (row.detail.title || $t('err.notDefinedLanguage')).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                var type = (row.detail.vulnType || $t('undefined')).toLowerCase()
-                var category = (row.category || $t('noCategory')).toLowerCase()
-                var termTitle = (terms.title || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                var termCategory = (terms.category || "").toLowerCase()
-                var termVulnType = (terms.vulnType || "").toLowerCase()
-                return title.indexOf(termTitle) > -1 && 
-                type.indexOf(termVulnType) > -1 &&
-                category.indexOf(termCategory) > -1
-            })
-            this.filteredRowsCount = result.length
-            this.filteredRows = result
-            return result;
-        },
+    const customFilter = (rows, terms, cols, getCellValue) => {
+      const result = rows.filter((row) => {
+        const title = (row.detail.title || t('err.notDefinedLanguage')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const type = (row.detail.vulnType || t('undefined')).toLowerCase();
+        const category = row.category;
+        const termTitle = (terms.title || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const termCategory = (terms.category || '').toLowerCase();
+        const termVulnType = (terms.vulnType || '').toLowerCase();
+        return title.includes(termTitle) && type.includes(termVulnType) && category.includes(termCategory);
+      });
+      filteredRowsCount.value = result.length;
+      return result;
+    };
 
-        addFindingFromVuln: function(vuln) {
-            var finding = null;
-            if (vuln) {
-                finding = {
-                    title: vuln.detail.title,
-                    vulnType: vuln.detail.vulnType,
-                    description: vuln.detail.description,
-                    observation: vuln.detail.observation,
-                    remediation: vuln.detail.remediation,
-                    remediationComplexity: vuln.remediationComplexity,
-                    priority: vuln.priority,
-                    references: vuln.detail.references,
-                    cvssv3: vuln.cvssv3,
-                    category: vuln.category,
-                    customFields: Utils.filterCustomFields('finding', vuln.category, this.$parent.customFields, vuln.detail.customFields, this.$parent.audit.language)
-                };
-            }
+    const addFindingFromVuln = async (vuln) => {
+      let finding = null;
+      if (vuln) {
+        finding = {
+          title: vuln.detail.title,
+          vulnType: vuln.detail.vulnType,
+          issueBackground: vuln.detail.issueBackground,
+          CvssScoreAma: vuln.detail.CvssScoreAma,
+          remediationDetails: vuln.detail.remediationDetails,
+          issueDetails: vuln.detail.issueDetails,
+          urgency: vuln.urgency,
+          severity: vuln.severity,
+          remediationBackground: vuln.detail.remediationBackground,
+          cvssv3: vuln.cvssv3,
+          category: vuln.category,
+          customFields: Utils.filterCustomFields('finding', vuln.category, props.parentCustomFields, vuln.detail.customFields, languages.value),
+        };
+      }
 
-            if (finding) {
-                AuditService.createFinding(this.auditId, finding)
-                .then(() => {
-                    this.findingTitle = "";
-                    Notify.create({
-                        message: $t('msg.findingCreateOk'),
-                        color: 'positive',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                })
-                .catch((err) => {
-                    Notify.create({
-                        message: err.response.data.datas,
-                        color: 'negative',
-                        textColor:'white',
-                        position: 'top-right'
-                    })
-                })
-            }
-        },
+      if (finding) {
+        try {
+          await AuditService.createFinding(auditId.value, finding);
+          findingTitle.value = '';
+          Notify.create({
+            message: t('msg.findingCreateOk'),
+            color: 'positive',
+            textColor: 'white',
+            position: 'top-right',
+          });
+        } catch (err) {
+          Notify.create({
+            message: err.response.data.datas,
+            color: 'negative',
+            textColor: 'white',
+            position: 'top-right',
+          });
+        }
+      }
+    };
 
     const addFinding = async (category) => {
       let finding = null;
@@ -196,8 +185,6 @@ export default {
           cvssv3: '',
           customFields: Utils.filterCustomFields('finding', '', props.parentCustomFields, [], languages.value),
         };
-        console.log(proxy)
-        proxy.$parent.getAudit();
       }
 
       if (finding) {
@@ -219,7 +206,6 @@ export default {
           });
         }
       }
-      proxy.$parent.getAudit();
     };
 
     watch(
@@ -236,6 +222,7 @@ export default {
     return {
       t,
       auditId,
+      audit,
       finding,
       findingTitle,
       vulnerabilities,
@@ -244,6 +231,7 @@ export default {
       rowsPerPageOptions,
       filteredRowsCount,
       search,
+      settings,
       languages,
       dtLanguage,
       currentExpand,

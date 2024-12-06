@@ -1,15 +1,16 @@
 <div>
-<breadcrumb
-buttons
-:title="`${$parent.audit.name} (${$parent.audit.auditType || 'Audit Type not set'})`"
-:state="parentState"
-:approvals="parentApprovals"
-:path="($parent.audit.parentId) ? `/audits/${$parent.audit.parentId}` : ''"
-:path-name="($parent.audit.type === 'retest') ? $t('originalAudit') : ($parent.audit.type === 'default') ? $t('multi') : ''"
->
-    <div slot="buttons">
-      <q-btn v-if="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" color="positive" :label="$t('btn.save')+' (ctrl+s)'" no-caps @click="updateAuditGeneral" />
-    </div>
+    <breadcrumb 
+    :title="`${audit.name}`" 
+    :state="parentState" 
+    :approvals="parentApprovals"
+  >
+
+  
+  <template v-slot:buttons>
+  
+    <q-btn v-if="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" color="positive" :label="t('btn.save') + ' (ctrl+s)'" no-caps @click="updateAuditGeneral" />
+    
+  </template>
 </breadcrumb>
 
 <div class="row q-col-gutter-md q-pa-md">
@@ -23,16 +24,16 @@ buttons
                     label-slot
                     v-model="audit.name"
                     outlined
-                    :rules="[val => !!val || $t('fieldIsRequired')]"
+                    :rules="[val => !!val || t('fieldIsRequired')]"
                     :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT">
                         <template v-slot:label>
-                            {{$t('name')}} <span class="text-red">*</span>
+                            {{t('name')}} <span class="text-red">*</span>
                         </template>
                     </q-input>
                     <div class="col"></div>
                     <q-select 
                     class="col-md-6 col-12 q-pt-none"
-                    :label="$t('language')"
+                    :label="t('language')"
                     v-model="audit.language" 
                     :options="languages" 
                     option-value="locale" 
@@ -45,7 +46,7 @@ buttons
                     />
                     <q-select
                     class="col-md-6 col-12 q-pt-none"
-                    :label="$t('template')"
+                    :label="t('template')"
                     v-model="audit.template"
                     :options="templates"
                     option-value="_id"
@@ -110,7 +111,7 @@ buttons
                     </q-select>
                     <q-select 
                     class="col-md-12 col-12 q-pt-none"
-                    :label="$t('collaborators')"
+                    :label="t('collaborators')"
                     stack-label
                     v-model="audit.collaborators"
                     :options="collaborators"
@@ -148,7 +149,7 @@ buttons
                     <q-select 
                     v-if="settings?.reviews?.enabled"
                     class="col-md-12 col-12"
-                    :label="$t('reviewers')"
+                    :label="t('reviewers')"
                     stack-label
                     v-model="audit.reviewers"
                     :options="reviewers"
@@ -246,7 +247,7 @@ buttons
             <q-card-section class="q-pt-none">
                 <textarea-array
                 ref="scopeField"
-                :label="$t('auditScope')" 
+                :label="t('auditScope')" 
                 v-model="audit.scope" 
                 :rules="(settings?.report?.public?.requiredFields?.scope) ? [val => !!val || t('fieldIsRequired')] : ['']"
                 :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT"/>
@@ -274,17 +275,17 @@ buttons
                    {{attach.filename}}
                     <q-tooltip anchor="top right" self="center right" :delay="500" content-class="text-bold large-tooltip"> {{attach}}</q-tooltip>
                     <q-btn flat color="info" @click="downloadDocument(index)">
-                        <q-tooltip self="center right" :delay="500" content-class="text-bold">{{$t('tooltip.downloadAttachement')}}</q-tooltip> 
+                        <q-tooltip self="center right" :delay="500" content-class="text-bold">{{t('tooltip.downloadAttachement')}}</q-tooltip> 
                             <i class="fa fa-download fa-lg"></i>
                     </q-btn>
                     <q-btn flat color="info" @click="deleteDocument(index)" size="25px">
-                        <q-tooltip self="center right" :delay="500" content-class="text-bold"> {{$t('tooltip.deleteAttachement')}}</q-tooltip> 
+                        <q-tooltip self="center right" :delay="500" content-class="text-bold"> {{t('tooltip.deleteAttachement')}}</q-tooltip> 
                             <i class="material-icons">delete</i>
                     </q-btn> 
                 </div>
             </q-card-section>   
             <q-expansion-item 
-            :label="$t('customFields')"
+            :label="t('customFields')"
             v-if="audit.customFields && audit.customFields.length > 0"
             default-opened
             header-class="bg-blue-grey-5 text-white" 

@@ -1,30 +1,33 @@
-import Vue from "vue";
-import { Dark } from "quasar";
+import { createApp } from 'vue';
+import App from './../App.vue';
+import { Dark } from 'quasar';
 
-const DarkModeSwitcher = {
-    install: function(Vue) {
-        Vue.prototype.toggleDarkMode = function() {
-            updateDarkMode(!Dark.isActive);
-        }
-    }
-};
-Vue.use(DarkModeSwitcher);
+const app = createApp(App);
 
 function updateDarkMode(dark = null) {
-    // using !! to convert it to a boolean is ok in this case,
-    // because we are checking, if the key exists
-    let darkmode = !!localStorage.getItem("darkmodeEnabled") || false;
-    if(dark != null) {
-        // set mode
-        darkmode = dark;
-    }
-    
-    Dark.set(darkmode);
-    if(darkmode) {
-      localStorage.setItem("darkmodeEnabled", "y");
-    } else {
-      localStorage.removeItem("darkmodeEnabled");
-    }
+  Dark.set(dark !== null ? dark : !!localStorage.getItem("darkmode"));
+  if (dark !== null) {
+    localStorage.setItem('darkmode', dark ? 'y' : 'n');
+  } else {
+    localStorage.removeItem('darkmode');
+  }
 }
 
-updateDarkMode();
+const toggleDarkMode = function() {
+  updateDarkMode(!Dark.isActive);
+};
+
+// Initialize dark mode based on local storage value
+function initializeDarkMode() {
+  const darkMode = localStorage.getItem('darkmode');
+  if (darkMode === 'y') {
+    Dark.set(true);
+  } else if (darkMode === 'n') {
+    Dark.set(false);
+  }
+}
+
+// Call initializeDarkMode when the app is created
+initializeDarkMode();
+
+export { toggleDarkMode, Dark };

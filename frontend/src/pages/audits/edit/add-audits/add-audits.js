@@ -8,9 +8,13 @@ import DataService from '@/services/data'
 import CompanyService from '@/services/company'
 import UserService from '@/services/user'
 
-import { $t } from '@/boot/i18n'
+import { useI18n } from 'vue-i18n';
 
 export default {
+    setup: () => {
+        const t = useI18n();
+        return {t}
+    },
     props: {
         frontEndAuditState: Number,
         parentState: String,

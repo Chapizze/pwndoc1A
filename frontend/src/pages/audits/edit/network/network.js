@@ -5,13 +5,19 @@ import Breadcrumb from 'components/breadcrumb';
 import AuditService from '@/services/audit';
 import Utils from '@/services/utils';
 
-import { $t } from '@/boot/i18n'
+import { useI18n } from 'vue-i18n'
+import _ from 'lodash';
+import { socket } from 'boot/socketio';
 
 export default {
     props: {
         frontEndAuditState: Number,
         parentState: String,
         parentApprovals: Array
+    },
+    setup() {
+        const { t } = useI18n()
+        return { t }
     },
     data: () => {
         return {
@@ -39,7 +45,9 @@ export default {
                 rowsPerPage: 20,
                 sortBy: 'port'
             },
-            AUDIT_VIEW_STATE: Utils.AUDIT_VIEW_STATE
+            AUDIT_VIEW_STATE: Utils.AUDIT_VIEW_STATE,
+            frontEndAuditState: Utils.AUDIT_VIEW_STATE.EDIT,
+
         }
     },
 
@@ -51,7 +59,7 @@ export default {
         this.auditId = this.$route.params.auditId;
         this.getAuditNetwork();
         
-        this.$socket.emit('menu', {menu: 'network', room: this.auditId});
+        socket.emit('menu', {menu: 'network', room: this.auditId});
 
         // save on ctrl+s
         var lastSave = 0;
@@ -64,14 +72,14 @@ export default {
     },
 
     beforeRouteLeave (to, from , next) {
-        if (this.$_.isEqual(this.audit, this.auditOrig))
+        if (_.isEqual(this.audit, this.auditOrig))
             next();
         else {
             Dialog.create({
-                title: $t('msg.thereAreUnsavedChanges'),
-                message: $t('msg.doYouWantToLeave'),
-                ok: {label: $t('btn.confirm'), color: 'negative'},
-                cancel: {label: $t('btn.cancel'), color: 'white'}
+                title: this.t('msg.thereAreUnsavedChanges'),
+                message: this.t('msg.doYouWantToLeave'),
+                ok: {label: this.t('btn.confirm'), color: 'negative'},
+                cancel: {label: this.t('btn.cancel'), color: 'white'}
             })
             .onOk(() => next())
         }
@@ -80,9 +88,9 @@ export default {
     computed: {
         selectHostsLabel: function() {
             if (this.targetsOptions && this.targetsOptions.length > 0)
-                return $t('msg.selectHost')
+                return this.t('msg.selectHost')
             else
-                return $t('msg.importHostsFirst')
+                return this.t('msg.importHostsFirst')
         }
     },
 
@@ -101,7 +109,7 @@ export default {
             .then((data) => {
                 this.audit = data.data.datas;
                 // Object.assign(this.audit, data.data.datas);
-                this.auditOrig = this.$_.cloneDeep(this.audit);
+                this.auditOrig = _.cloneDeep(this.audit);
             })
             .catch((err) => {
                 console.log(err)
@@ -114,7 +122,7 @@ export default {
             .then(() => {
                 this.auditOrig = this.$_.cloneDeep(this.audit);
                 Notify.create({
-                    message: $t('msg.auditUpdateOk'),
+                    message: this.t('msg.auditUpdateOk'),
                     color: 'positive',
                     textColor:'white',
                     position: 'top-right'
@@ -231,16 +239,16 @@ export default {
                     color: 'positive',
                     textColor:'white',
                     position: 'top-right'
-                });
+                })
             }
             catch (err) {
-                console.log(err);
+                console.log(err)
                 Notify.create({
                     message: 'Error parsing Nmap',
                     color: 'negative',
                     textColor:'white',
                     position: 'top-right'
-                });
+                })
             }
         },
 
@@ -321,16 +329,16 @@ export default {
                     color: 'positive',
                     textColor:'white',
                     position: 'top-right'
-                });
+                })
             }
             catch (err) {
-                console.log(err);
+                console.log(err)
                 Notify.create({
                     message: 'Error parsing Nessus',
                     color: 'negative',
                     textColor:'white',
                     position: 'top-right'
-                });
+                })
             }
         }
     }

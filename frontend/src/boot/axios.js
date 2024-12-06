@@ -1,7 +1,8 @@
 import axios from 'axios'
-import User from '@/services/user'
+import {clearUser } from '@/services/user'
 import Router from '../router'
-import {isSSO} from '../config/config.json'
+import config from '../config/config.json';
+const isSSO = config.isSSO;
 
 const axiosInstance = axios.create({
   baseURL: `${window.location.origin}/api`
@@ -23,11 +24,12 @@ else {
   route2 = '/login'
 }
 
+
 // Redirect to login if response is 401 (Unauthenticated)
 axiosInstance.interceptors.response.use(
   response => {
     return response
-  }, 
+  },
   error => {
     const originalRequest = error.config
 
@@ -35,7 +37,7 @@ axiosInstance.interceptors.response.use(
 
     // 401 after User.refreshToken function call
     if (error.response.status === 401 && originalRequest.url.endsWith('/users/refreshtoken')) {
-      User.clear()
+      clearUser()
       return Promise.reject(error)
     }
 
@@ -62,20 +64,22 @@ axiosInstance.interceptors.response.use(
     // **** End of exceptions
 
     // All other 401 calls
+
+
     if (error.response.status === 401) {
       if (!refreshPending) {
         refreshPending = true
         axiosInstance.get(route1)
-        .then(() => {
-          requestsQueue.forEach(e => e())
-          requestsQueue = []
-        })
-        .catch(err => {
-          Router.push(route2)          
-        })
-        .finally(() => {
-          refreshPending = false
-        })
+          .then(() => {
+            requestsQueue.forEach(e => e())
+            requestsQueue = []
+          })
+          .catch(err => {
+            Router.push(route2)
+          })
+          .finally(() => {
+            refreshPending = false
+          })
       }
       return new Promise((resolve) => {
         requestsQueue.push(() => resolve(axiosInstance.request(originalRequest)))
@@ -85,6 +89,10 @@ axiosInstance.interceptors.response.use(
   }
 )
 
-export default ({ Vue }) => {
-  Vue.prototype.$axios = axiosInstance
+export default {
+  install(app) {
+    app.config.globalProperties.$axios = axiosInstance
+  },
+  
 }
+export { axiosInstance } 

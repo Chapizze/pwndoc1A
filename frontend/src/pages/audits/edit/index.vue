@@ -1,9 +1,9 @@
 <template>
-<div>
-	<q-drawer side="left" :value="true" :width="400">
+	<div>
+	  <q-drawer side="left" :model-value="true" :width="400">
 		<q-splitter horizontal v-model="splitterRatio" :limits="[50, 80]" style="height: 100%">
 		  <template #before>
-			<q-list class="home-drawer" >
+			<q-list class="home-drawer">
 			  <q-item style="padding:0px">
 				<q-item-section avatar v-if="audit.type === 'multi'">
 				  <q-chip square size="md" outline color="green" :label="t('multi')" />
@@ -82,9 +82,8 @@
 				</q-item-section>
 			  </q-item>
   
-			  <q-item :to='"/audits/"+auditId+"/general"' active-class="custom-active-item"
-			  exact>
-				<q-item-section avatar >
+			  <q-item :to='"/audits/"+auditId+"/general"' active-class="custom-active-item" exact clickable>
+				<q-item-section avatar>
 				  <q-icon name="fa fa-cog"></q-icon>
 				</q-item-section>
 				<q-item-section>{{t('generalInformation')}}</q-item-section>
@@ -137,7 +136,7 @@
 				  <q-list no-border>
 					<div class="q-mt-md"></div>
 					<div v-for="audit of children" :key="audit._id">
-					  <q-item dense clickable >
+					  <q-item dense clickable>
 						<q-item-section @click="router.push(`/audits/${audit._id}`)">
 						  <span>{{audit.name}} <b>({{audit.auditType}})</b></span>
 						</q-item-section>
@@ -228,40 +227,39 @@
 					  </q-item-section>
 					</q-item>
 					<q-list no-border>
-						<div v-for="finding of categoryFindings.findings" :key="finding._id" :style="`--active-bg-color: ${lighterFindingColor(finding)}`">
-						  <q-item
-							dense
-							class="cursor-pointer"
-							:to="'/audits/'+auditId+'/findings/'+finding._id"
-							active-class="active-background"
-						  >
-							<q-item-section side v-if="!categoryFindings.sortOption.sortAuto && frontEndAuditState === AUDIT_VIEW_STATE.EDIT">
-							  <q-icon name="mdi-arrow-split-horizontal" class="cursor-pointer handle" color="grey" />
-							</q-item-section>
-							<q-item-section side>
-							  <q-chip
-								class="text-white"
-								size="sm"
-								square
-								:style="`background: ${getFindingColor(finding)}`"
-							  >{{getFindingSeverity(finding).substring(0,1)}}</q-chip>
-							</q-item-section>
-							<q-item-section>
-							  <span>{{finding.title}}</span>
-							</q-item-section>
-							<q-item-section side>
-							  <q-icon v-if="audit.type === 'default' && finding.status === 0" name="check" color="green" />
-							  <q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'ok'" name="check" color="green" />
-							  <q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'ko'" name="fas fa-xmark" color="red" />
-							  <q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'partial'" name="priority_high" color="orange" />
-							  <q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'unknown'" name="question_mark" color="brown" />
-							</q-item-section>
-						  </q-item>
-						  <div class="row">
-							<div v-for="(user,idx) in findingUsers" :key="idx" v-if="user.finding === finding._id" class="col multi-colors-bar" :style="{background:user.color}" />
-						  </div>
+					  <div v-for="finding of categoryFindings.findings" :key="finding._id" :style="`--active-bg-color: ${lighterFindingColor(finding)}`">
+						<q-item
+						  dense
+						  class="cursor-pointer"
+						  :to="'/audits/'+auditId+'/findings/'+finding._id"
+						  active-class="active-background"
+						>
+						  <q-item-section side v-if="!categoryFindings.sortOption.sortAuto && frontEndAuditState === AUDIT_VIEW_STATE.EDIT">
+							<q-icon name="mdi-arrow-split-horizontal" class="cursor-pointer handle" color="grey" />
+						  </q-item-section>
+						  <q-item-section side>
+							<q-chip
+							  class="text-white"
+							  size="sm"
+							  square
+							  :style="`background: ${getFindingColor(finding)}`"
+							>{{getFindingSeverity(finding).substring(0,1)}}</q-chip>
+						  </q-item-section>
+						  <q-item-section>
+							<span>{{finding.title}}</span>
+						  </q-item-section>
+						  <q-item-section side>
+							<q-icon v-if="audit.type === 'default' && finding.status === 0" name="check" color="green" />
+							<q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'ok'" name="check" color="green" />
+							<q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'ko'" name="fas fa-xmark" color="red" />
+							<q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'partial'" name="priority_high" color="orange" />
+							<q-icon v-else-if="audit.type === 'retest' && finding.retestStatus === 'unknown'" name="question_mark" color="brown" />
+						  </q-item-section>
+						</q-item>
+						<div class="row">
+						  <div v-for="(user,idx) in findingUsers" :key="idx" v-if="user.finding === finding._id" class="col multi-colors-bar" :style="{background:user.color}" />
 						</div>
-					  
+					  </div>
 					</q-list>
 				  </div>
 				</div>
@@ -306,8 +304,8 @@
 			</q-list>
 		  </template>
 		</q-splitter>
-	</q-drawer>
-	<router-view :key="$route.fullPath" :frontEndAuditState="frontEndAuditState" :parentState="audit.state" :parentApprovals="audit.approvals" />
+	  </q-drawer>
+	  <router-view :key="$route.fullPath" :frontEndAuditState="frontEndAuditState" :parentState="audit.state" :parentApprovals="audit.approvals" />
 	</div>
   </template>
   
