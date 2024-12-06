@@ -108,7 +108,7 @@ You can also open an GitHub so that I can help you.
 
 # Demos
 
-![[demo.gif]]
+![](https://github.com/AmadeusITGroup/pwndoc1A/blob/vue3/demo.gif)
 # Donate
 
 If you would like to help me and sponsor this project
