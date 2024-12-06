@@ -106,7 +106,7 @@ export default {
 
     const downloadAttachement = async (index) => {
       try {
-        const data = await AuditService.getAudit(auditId.value);
+        const data = await AuditService.getFinding(auditId.value, findingId.value);
         const attachmentData = await AttachmentService.getAttachment(auditId.value, data.data.datas.attachments[index]._id);
         const file = attachmentData.data.datas;
         const blob = new Blob([Uint8Array.from(atob(file.value), c => c.charCodeAt(0))], { type: "application/octet-stream" });
