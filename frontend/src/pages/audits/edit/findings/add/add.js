@@ -108,7 +108,7 @@ export default {
         const termTitle = (terms.title || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const termCategory = (terms.category || '').toLowerCase();
         const termVulnType = (terms.vulnType || '').toLowerCase();
-        return title.includes(termTitle) && type.includes(termVulnType) && category.includes(termCategory);
+        return title.includes(termTitle) && type?.includes(termVulnType) && category?.includes(termCategory);
       });
       filteredRowsCount.value = result.length;
       return result;
@@ -120,13 +120,12 @@ export default {
         finding = {
           title: vuln.detail.title,
           vulnType: vuln.detail.vulnType,
-          issueBackground: vuln.detail.issueBackground,
-          CvssScoreAma: vuln.detail.CvssScoreAma,
-          remediationDetails: vuln.detail.remediationDetails,
-          issueDetails: vuln.detail.issueDetails,
-          urgency: vuln.urgency,
-          severity: vuln.severity,
-          remediationBackground: vuln.detail.remediationBackground,
+          description: vuln.detail.description,
+          observation: vuln.detail.observation,
+          remediation: vuln.detail.remediation,
+          remediationComplexity: vuln.remediationComplexity,
+          priority: vuln.priority,
+          references: vuln.detail.references,
           cvssv3: vuln.cvssv3,
           category: vuln.category,
           customFields: Utils.filterCustomFields('finding', vuln.category, props.parentCustomFields, vuln.detail.customFields, languages.value),
@@ -159,30 +158,28 @@ export default {
       if (category && findingTitle.value) {
         finding = {
           title: findingTitle.value,
-          vulnType: '',
-          description: '',
-          CvssScoreAma: '',
-          remediationDetails: '',
-          issueDetails: '',
-          urgency: '',
-          severity: '',
-          remediationBackground: '',
-          cvssv3: '',
+          vulnType: "",
+          description: "",
+          observation: "",
+          remediation: "",
+          remediationComplexity: "",
+          priority: "",
+          references: [],
+          cvssv3: "",
           category: category.name,
           customFields: Utils.filterCustomFields('finding', category.name, props.parentCustomFields, [], languages.value),
         };
       } else if (findingTitle.value) {
         finding = {
           title: findingTitle.value,
-          vulnType: '',
-          description: '',
-          CvssScoreAma: '',
-          remediationDetails: '',
-          issueDetails: '',
-          urgency: '',
-          severity: '',
-          remediationBackground: '',
-          cvssv3: '',
+          vulnType: "",
+          description: "",
+          observation: "",
+          remediation: "",
+          remediationComplexity: "",
+          priority: "",
+          references: [],
+          cvssv3: "",
           customFields: Utils.filterCustomFields('finding', '', props.parentCustomFields, [], languages.value),
         };
       }

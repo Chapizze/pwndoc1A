@@ -159,25 +159,24 @@ export default {
     const parseSerpico = (vulnerabilities) => {
       const result = [];
       vulnerabilities.forEach((vuln) => {
-        const tmpVuln = {};
+        var tmpVuln = {};
         tmpVuln.cvssv3 = vuln.c3_vs || null;
-        tmpVuln.severity = null;
-        tmpVuln.urgency = null;
-        const details = {};
-        details.locale = formatSerpicoText(vuln.language) || 'en';
-        details.title = formatSerpicoText(vuln.title);
-        details.vulnType = formatSerpicoText(vuln.type);
-        details.issueBackground = formatSerpicoText(vuln.overview);
-        details.CvssScoreAma = formatSerpicoText(vuln.request);
-        details.remediationDetails = formatSerpicoText(vuln.remediationDetails);
-        details.issueDetails = formatSerpicoText(vuln.issueDetails);
-        details.remediationBackground = '';
-        if (vuln.remediationBackground && vuln.remediationBackground !== '') {
-          vuln.remediationBackground = vuln.remediationBackground.replace(/<paragraph>/g, '');
-          details.remediationBackground = vuln.remediationBackground.split('</paragraph>').filter(Boolean);
+        tmpVuln.priority = null;
+        tmpVuln.remediationComplexity = null;
+        var details = {};
+        details.locale = this.formatSerpicoText(vuln.language) || 'en';
+        details.title = this.formatSerpicoText(vuln.title);
+        details.vulnType = this.formatSerpicoText(vuln.type);
+        details.description = this.formatSerpicoText(vuln.overview);
+        details.observation = this.formatSerpicoText(vuln.poc);
+        details.remediation = this.formatSerpicoText(vuln.remediation);
+        details.references = []
+        if (vuln.references && vuln.references !== "") {
+            vuln.references = vuln.references.replace(/<paragraph>/g, '')
+            details.references = vuln.references.split('</paragraph>').filter(Boolean)
         }
         tmpVuln.details = [details];
-
+        
         result.push(tmpVuln);
       });
 

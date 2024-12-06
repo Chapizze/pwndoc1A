@@ -52,18 +52,13 @@
                 >
                     <q-list separator>
                         <q-item-label header>{{t('selectCategory')}}</q-item-label>
-                        <q-item clickable v-close-popup @click="currentCategory = null; cleanCurrentVulnerability(); $refs.createModal.show()">
-                            <q-item-section>
-                              <q-item-label>{{t('noCategory')}}</q-item-label>
-                            </q-item-section>
-                        </q-item>
-                        <q-item v-for="category of vulnCategories" :key="category.name" clickable v-close-popup @click="currentCategory = $_.cloneDeep(category); cleanCurrentVulnerability(); $refs.createModal.show()">
+                        <q-item v-for="category of vulnCategories" :key="category.name" clickable v-close-popup @click="currentCategory = _.cloneDeep(category); cleanCurrentVulnerability(); $refs.createModal.show()">
                             <q-item-section>
                               <q-item-label>{{category.name}}</q-item-label>
                             </q-item-section>
                         </q-item>
                     </q-list>
-                </q-btn-dropdown>            
+                </q-btn-dropdown>         
             </template>
 
             <template v-slot:top-row="props">

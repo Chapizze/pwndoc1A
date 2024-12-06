@@ -474,7 +474,6 @@ export default {
     const deleteComment = (comment) => {
       AuditService.deleteComment(auditId.value, comment._id)
         .then(() => {
-          console.log(proxy.$parent)
           if (proxy.$parent.focusedComment === comment._id)
             fieldHighlighted = ""
         })

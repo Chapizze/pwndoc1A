@@ -43,25 +43,23 @@
               @keyup.enter="addFinding()" 
               outlined
             >
-              <template #append>
-                <q-btn-dropdown :label="t('btn.create')" no-caps flat>
-                  <q-list separator>
-                    <q-item-label header>{{t('selectCategory')}}</q-item-label>
-                    <q-item clickable v-close-popup @click="addFinding()">
-                    </q-item>
-                    <q-item 
-                      v-for="category of vulnCategories" 
-                      :key="category.name" 
-                      clickable 
-                      v-close-popup 
-                      @click="addFinding(category)"
-                    >
-                      <q-item-section>
-                        <q-item-label>{{category.name}}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </q-list>
-                </q-btn-dropdown>
+            <template #append>
+              <q-btn-dropdown :label="t('btn.create')" no-caps flat>
+                <q-list separator>
+                  <q-item-label header>{{t('selectCategory')}}</q-item-label>
+                  <q-item 
+                    v-for="category of vulnCategories" 
+                    :key="category.name" 
+                    clickable 
+                    v-close-popup 
+                    @click="addFinding(category)"
+                  >
+                    <q-item-section>
+                      <q-item-label>{{category.name}}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </q-list>
+              </q-btn-drobtn-dropdown>
               </template>
             </q-input>
           </template>

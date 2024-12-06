@@ -472,7 +472,7 @@
 	  };
   
 	  const getUIState = () => {
-		if (!settings.reviews.enabled || audit.state === "EDIT") {
+		if (!settings?.reviews?.enabled || audit.state === "EDIT") {
 		  frontEndAuditState.value = isUserAnEditor() ? Utils.AUDIT_VIEW_STATE.EDIT : Utils.AUDIT_VIEW_STATE.EDIT_READONLY;
 		} else if (audit.state === "REVIEW") {
 		  if (!isUserAReviewer()) {
