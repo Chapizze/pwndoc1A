@@ -16,6 +16,7 @@
 module.exports = function (request, app) {
   describe('Data Suite Tests', () => {
     var userToken = '';
+    var catId = "";
     beforeAll(async () => {
       var response = await request(app).post('/api/users/token').send({ username: 'admin', password: 'Adminpassword123' })
       userToken = response.body.datas.token
@@ -475,59 +476,52 @@ module.exports = function (request, app) {
     }),
 
       describe('Vuln categories CRUD operations', () => {
-        it('Get vuln categories', async done => {
-          var response = await request(app).get('/api/data/vulnerability-categories')
-            .set('Cookie', [
-              `token=JWT ${userToken}`
-            ])
+        let catId;
 
-          expect(response.status).toBe(200)
-          expect(response.body.datas).toHaveLength(0)
-        })
+        it('Get vuln categories', async () => {
+          const response = await request(app)
+            .get('/api/data/vulnerability-categories')
+            .set('Cookie', [`token=JWT ${userToken}`]);
+
+          expect(response.status).toBe(200);
+          expect(response.body.datas).toHaveLength(0);
+        });
 
         it('Create vuln category', async () => {
-
-
-          var category1 = {
+          const category1 = {
             name: "[CWE-285] Improper Authorization",
             sortValue: "cvssScore",
             sortOrder: "desc",
             sortAuto: true
-          }
+          };
 
-          var response = await request(app).post('/api/data/vulnerability-categories')
-            .set('Cookie', [
-              `token=JWT ${userToken}`
-            ])
-            .send(category1)
+          const response = await request(app)
+            .post('/api/data/vulnerability-categories')
+            .set('Cookie', [`token=JWT ${userToken}`])
+            .send(category1);
 
-          expect(response.status).toBe(201)
-        })
+          expect(response.status).toBe(201);
+          catId = response.body.datas._id;
+        });
 
-        it('Get vuln categories', async done => {
-
-          var expected = [{
+        it('Get vuln categories', async () => {
+          const expected = [{
             name: "[CWE-285] Improper Authorization",
             sortValue: "cvssScore",
             sortOrder: "desc",
             sortAuto: true
-          }]
+          }];
+          expected[0]._id = catId;
 
-          var response = await request(app).get('/api/data/vulnerability-categories')
-            .set('Cookie', [
-              `token=JWT ${userToken}`
-            ])
+          const response = await request(app)
+            .get('/api/data/vulnerability-categories')
+            .set('Cookie', [`token=JWT ${userToken}`]);
 
-
-          expect(response.status).toBe(200)
-          expect(response.body.datas).toHaveLength(1)
-          expect(response.body.datas).toEqual(expect.arrayContaining(expected))
-
-          done()
-        })
-
-      })
-
+          expect(response.status).toBe(200);
+          expect(response.body.datas).toHaveLength(1);
+          expect(response.body.datas).toEqual(expect.arrayContaining(expected));
+        });
+      });
     //it('Should not delete nonexistent section', async () => {
     //  var response = await request(app).delete('/api/data/sections/attack_scenario/ru')
     //    .set('Cookie', [
