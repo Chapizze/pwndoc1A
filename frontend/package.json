@@ -4,7 +4,7 @@
   "description": "pwndoc frontend",
   "productName": "pwndoc",
   "cordovaId": "org.cordova.quasar.app",
-  "author": "Stanley Hammer",
+  "author": "Chapizze - Stanley Hammer",
   "private": true,
   "scripts": {
     "build": "quasar build",
@@ -38,7 +38,8 @@
     "vue-lodash": "^2.1.2",
     "vue-router": "^4.5.0",
     "vue2-dragula": "^2.5.5",
-    "vue3-draggable": "^2.0.9"
+    "vue3-draggable": "^2.0.9",
+    "vue3-apexcharts": "^1.8.0"
   },
   "devDependencies": {
     "@quasar/app-webpack": "^3.15.1",

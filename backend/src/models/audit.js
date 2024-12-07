@@ -4,6 +4,7 @@ const fs = require('fs');
 var key = fs.readFileSync('/run/secrets/key', 'utf8').trim()
 var salt = fs.readFileSync('/run/secrets/salt', 'utf8').trim()
 const CVSS31 = require('../lib/cvsscalc31');
+const { resolveObjectURL } = require('buffer');
 var Schema = mongoose.Schema;
 
 var Paragraph = {
@@ -120,30 +121,49 @@ AuditSchema.plugin(mongooseFieldEncryption, {
 
 // Get all audits (admin)
 AuditSchema.statics.getAudits = (isAdmin, userId, filters) => {
-    return new Promise((resolve, reject) => { 
-        var query = Audit.find(filters)
-        if (!isAdmin)
-            query.or([{creator: userId}, {collaborators: userId}, {reviewers: userId}])
-        query.populate('creator', 'username')
-        query.populate('collaborators', 'username')
-        query.populate('reviewers', 'username firstname lastname')
-        query.populate('approvals', 'username firstname lastname')
-        query.populate('company', 'name')
-        query.select('id name auditType language creator collaborators company createdAt state type parentId')
-        query.exec()
-        .then((rows) => {
+    return new Promise(async (resolve, reject) => { 
+        try {
+            const rows = await Audit.find()
+            .populate('creator', 'username')
+            .populate('collaborators', 'username')
+            .populate('reviewers', 'username firstname lastname')
+            .populate('approvals', 'username firstname lastname')
+            .populate('company', 'name')
+            .select('id name auditType language creator collaborators company createdAt state type parentId')
+            .exec();
+            if (filters) {
+                const tab = [];
+                for (const row of rows) {
+                    const audit = await Audit.getAudit(true, row._id, userId)
+                    const lowercaseFilter = filters['findings.filter']?.toLowerCase();
+                    if (
+                        (audit.name && audit.name?.toLowerCase()?.match(lowercaseFilter)) ||
+                        (audit.creator.username && audit.creator.username?.match(filters['findings.filter'])) 
+                    ) {
+                        tab.push(row);
+                        break
+                    }
+                    for (const finding of audit.findings || []) {
+                        if(finding.title && finding.title.toLowerCase()?.match(lowercaseFilter)){
+                            tab.push(row);
+                            break; // Exit the loop if a matching finding is found
+                        }
+                    }
+                }
+                resolve(tab);
+            }
             resolve(rows)
-        })
-        .catch((err) => {
-            reject(err)
-        })
+        }catch (err) {
+            console.log('An error occured when fetching audits from DB', err)
+            return reject(err);
+        }
+       
     })
 }
 
 // Get Audit with ID to generate report
 AuditSchema.statics.getAudit = (isAdmin, auditId, userId) => {
     return new Promise((resolve, reject) => {
-        console.log('sdd')
         var query = Audit.findById(auditId)
         if (!isAdmin)
             query.or([{creator: userId}, {collaborators: userId}, {reviewers: userId}])
@@ -166,7 +186,6 @@ AuditSchema.statics.getAudit = (isAdmin, auditId, userId) => {
         query.populate('comments.replies.author', 'username firstname lastname')
         query.exec()
         .then(async(row) => {
-            console.log(row)
             if (!row)
                 throw({fn: 'NotFound', message: 'Audit not found or Insufficient Privileges'})
             else{

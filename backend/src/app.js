@@ -147,6 +147,7 @@ require('./routes/image')(app);
 require('./routes/settings')(app);
 require('./routes/sso')(app);
 require('./routes/attachment')(app);
+require('./routes/stats')(app);
 
 app.get("*", function(req, res) {
     res.status(404).json({"status": "error", "data": "Route undefined"});

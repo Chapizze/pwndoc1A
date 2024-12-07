@@ -6,6 +6,7 @@ export default {
         audits: 'Audits',
         vulnerabilities: 'Vulnerabilities',
         data: 'Data',
+        stats: 'Stats'
     },
     btn: {
         cancel: 'Cancel',
