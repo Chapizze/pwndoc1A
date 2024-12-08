@@ -15,4 +15,15 @@ module.exports = function (app) {
         }
 
     });
+
+    app.get('/api/stats/findingBySeverity/:year', acl.hasPermission('audits:read-all'), async function (req, res) {
+        try {
+            var data = await Stats.getFindingBySeverity(acl.isAllowed(req.decodedToken.role, 'audits:read-all'), req.decodedToken.id, req.params.year)
+            Response.Ok(res, data)
+        }
+        catch (err) {
+            Response.Internal(res, err)
+        }
+
+    });
 }

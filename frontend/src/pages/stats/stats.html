@@ -1,7 +1,13 @@
 <div>
     <q-page>
-        <div class="q-pa-md" style="width: 50%;">
-            <findingNumberCharts :modelValue="data" />
+        <div class="q-pa-md row">
+            <div class="col-6">
+                <findingNumberCharts :modelValue="findingsByCategory" />
+            </div>
+            <div class="col-6">
+                <findingSeverityCharts :modelValue="findingsBySeverity" @year-change="onYearChange" />
+            </div>
+
         </div>
     </q-page>
 </div>

@@ -1,5 +1,6 @@
 import findingNumberCharts from 'components/stats/findingNumber';
-import { ref, onMounted} from 'vue';
+import findingSeverityCharts from 'components/stats/findingSeverity'
+import { ref, onMounted, watch} from 'vue';
 import { useI18n } from 'vue-i18n';
 import StatsService from '@/services/stats';
 
@@ -9,24 +10,49 @@ export default {
         const { t } = useI18n();
         const findingNumber = ref([]);
         const findingNumberChart = ref(null);
-        const data = ref(null);
+        const findingsByCategory = ref(null);
+        const findingsBySeverity = ref(null);
+        const selectedYear = ref(new Date().getFullYear())
 
         onMounted(async () => {
-            const req = await StatsService.getFindingByCategory();
-            data.value = req.data.datas 
+            
+            await getFindingsByCategory();
+            await getFindingsBySeverity(selectedYear.value);
         });
+
+        const getFindingsByCategory = async () => {
+            const req = await StatsService.getFindingsByCategory();
+            findingsByCategory.value = req.data.datas 
+        }
+
+        const getFindingsBySeverity = async (year) => {
+            const request = await StatsService.getFindingsBySeverity(year);
+            findingsBySeverity.value = request.data.datas       
+        }
+
+       const onYearChange = async (newYear) => {
+            selectedYear.value = newYear
+            await getFindingsBySeverity(selectedYear.value)      
+        }
 
 
         return {
             findingNumber,
             findingNumberChart,
             t,
-            data
+            findingsBySeverity,
+            findingsByCategory,
+            getFindingsBySeverity,
+            getFindingsByCategory,
+            onYearChange,
+            selectedYear,
+
         }
 
     },
     components: {
-        findingNumberCharts
+        findingNumberCharts,
+        findingSeverityCharts
     }
 
 }
