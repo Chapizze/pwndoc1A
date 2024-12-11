@@ -111,6 +111,8 @@ You can also open an GitHub so that I can help you.
 ![](https://github.com/AmadeusITGroup/pwndoc1A/blob/vue3/demo.gif)
 
 ![](https://github.com/AmadeusITGroup/pwndoc1A/blob/vue3/docs/_images/stats.png)
+
+![](https://github.com/AmadeusITGroup/pwndoc1A/blob/vue3/docs/_images/statsReport.png)
 # Donate
 
 If you would like to help me and sponsor this project
