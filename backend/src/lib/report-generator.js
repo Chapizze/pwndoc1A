@@ -13,14 +13,18 @@ var Settings = require('mongoose').model('Settings');
 var CVSS31 = require('./cvsscalc31.js');
 var translate = require('../translate')
 var $t
+const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+var Stats = require('./stats')
+const Chart = require('chart.js/auto');
+
 
 // Generate document with docxtemplater
-async function generateDoc(audit) {
+async function generateDoc(audit, userId) {
     var templatePath = `${__basedir}/../report-templates/${audit.template.name}.${audit.template.ext || 'docx'}`
     var content = fs.readFileSync(templatePath, "binary");
-    
+
     var zip = new PizZip(content);
-    
+
     translate.setLocale(audit.language)
     $t = translate.translate
 
@@ -29,14 +33,14 @@ async function generateDoc(audit) {
 
     var opts = {};
     // opts.centered = true;
-    opts.getImage = function(tagValue, tagName) {
+    opts.getImage = function (tagValue, tagName) {
         if (tagValue !== "undefined") {
             tagValue = tagValue.split(",")[1];
             return Buffer.from(tagValue, 'base64');
         }
         // return fs.readFileSync(tagValue, {encoding: 'base64'});
     }
-    opts.getSize = function(img, tagValue, tagName) {
+    opts.getSize = function (img, tagValue, tagName) {
         if (img) {
             var sizeObj = sizeOf(img);
             var width = sizeObj.width;
@@ -61,9 +65,9 @@ async function generateDoc(audit) {
                 width = 600;
                 height = Math.floor(sizeObj.height / divider);
             }
-            return [width,height];
+            return [width, height];
         }
-        return [0,0];
+        return [0, 0];
     }
 
     if (settings.report.private.imageBorder && settings.report.private.imageBorderColor)
@@ -72,19 +76,23 @@ async function generateDoc(audit) {
     try {
         var imageModule = new ImageModule(opts);
     }
-    catch(err) {
+    catch (err) {
         console.log(err)
     }
-    expressionParser.filters = {...expressions, ...customGenerator.expressions}
-    var doc = new Docxtemplater().attachModule(imageModule).loadZip(zip).setOptions({parser: parser, paragraphLoop: true});
+    expressionParser.filters = { ...expressions, ...customGenerator.expressions }
+    var doc = new Docxtemplater().attachModule(imageModule).loadZip(zip).setOptions({ parser: parser, paragraphLoop: true });
     customGenerator.apply(preppedAudit);
-    doc.setData(preppedAudit);
+    doc.setData({
+        ...preppedAudit,
+        ...(await prepChartData(audit, userId))
+    });
+
     try {
         doc.render();
     }
     catch (error) {
         if (error.properties.id === 'multi_error') {
-            error.properties.errors.forEach(function(err) {
+            error.properties.errors.forEach(function (err) {
                 console.log(err);
             });
         }
@@ -92,7 +100,7 @@ async function generateDoc(audit) {
             console.log(error)
         if (error.properties && error.properties.errors instanceof Array) {
             const errorMessages = error.properties.errors.map(function (error) {
-                return `Explanation: ${error.properties.explanation}\nScope: ${JSON.stringify(error.properties.scope).substring(0,142)}...`
+                return `Explanation: ${error.properties.explanation}\nScope: ${JSON.stringify(error.properties.scope).substring(0, 142)}...`
             }).join("\n\n");
             // errorMessages is a humanly readable message looking like this :
             // 'The tag beginning with "foobar" is unopened'
@@ -102,11 +110,343 @@ async function generateDoc(audit) {
             throw error
         }
     }
-    var buf = doc.getZip().generate({type:"nodebuffer"});
+    var buf = doc.getZip().generate({ type: "nodebuffer" });
 
     return buf;
 }
 exports.generateDoc = generateDoc;
+
+async function prepChartData(audit, userId) {
+    async function fetchData() {
+
+        const findingNumbers = await Stats.getFindingByCategory(true, userId)
+
+        const categories = []
+        for (const finding of audit.findings) {
+            if (finding.category && !categories.includes(finding.category)) {
+                categories.push(finding.category)
+            }
+        }
+        const data = {
+            categories: categories,
+            findingNumbers: findingNumbers[0].data
+        }
+        return data;
+    }
+
+    async function fetchSeverityData(audit) {
+        const severityLevels = ['Critical', 'High', 'Medium', 'Low'];
+        const severityCounts = {
+            'Critical': 0,
+            'High': 0,
+            'Medium': 0,
+            'Low': 0
+        };
+
+        // Count findings by severity
+        for (const finding of audit.findings) {
+            const sev = Stats.getFindingSeverity(finding, audit)
+            if (sev && severityLevels.includes(sev)) {
+                severityCounts[sev]++;
+            }
+        }
+
+        // Convert to array for easier charting
+        const severityData = severityLevels.map(level => severityCounts[level]);
+        const totalFindings = severityData.reduce((a, b) => a + b, 0);
+
+
+        return { severityData, totalFindings, severityLevels };
+    }
+
+    // Create Column Chart
+
+    const createColumnChart = async (data, labels) => {
+        // Chart configuration with modern Chart.js approach
+        const configuration = {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Findings by Category',
+                    data: data,
+                    backgroundColor: 'rgba(0, 0, 255, 0.7)', // Blue with opacity
+                    borderColor: 'blue',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Findings by Category',
+                        font: {
+                            size: 16,
+                            family: 'Arial, sans-serif',
+                            weight: 'bold'
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Findings',
+                            font: {
+                                size: 12,
+                                family: 'Arial, sans-serif',
+                                color: 'black'
+                            }
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                family: 'Arial, sans-serif',
+                                size: 10
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Categories',
+                            font: {
+                                size: 12,
+                                family: 'Arial, sans-serif'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Arial, sans-serif',
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                // Custom plugin to ensure crisp rendering
+                id: 'crispEdges',
+                beforeDraw: (chart) => {
+                    const ctx = chart.ctx;
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.webkitImageSmoothingEnabled = false;
+                }
+            }]
+        };
+
+        // Create canvas with updated configuration
+        const width = 600;
+        const height = 300;
+        const chartCanvas = new ChartJSNodeCanvas({
+            width,
+            height,
+            backgroundColour: 'white'
+        });
+
+        // Configure defaults globally (if needed)
+        Chart.defaults.font.family = 'Arial, sans-serif';
+        Chart.defaults.font.size = 12;
+
+        // Render to buffer with high quality
+        const buffer = await chartCanvas.renderToBuffer(configuration);
+
+        // Convert to base64
+        return buffer.toString('base64');
+    };
+
+    const createDonutChart = async (data, totalFindings, severityLevels) => {
+        // Severity colors mapping
+        const colors = {
+            'Critical': 'black',
+            'High': 'red',
+            'Medium': 'orange',
+            'Low': 'green'
+        };
+
+        // Convert severity levels to colors
+        const backgroundColor = severityLevels.map(severity => colors[severity]);
+
+        // Create canvas context
+        const width = 500;
+        const height = 500; // Increased height to accommodate lower legend
+        const chartCanvas = new ChartJSNodeCanvas({
+            width,
+            height,
+            backgroundColour: 'white'
+        });
+
+        // Configuration for donut chart
+        const configuration = {
+            type: 'doughnut',
+            data: {
+                labels: severityLevels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColor,
+                    borderColor: 'white',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: false,
+                cutout: '60%', // Creates donut effect
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Findings by Severity',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            },
+            plugins: [
+                {
+                    // Custom plugin to add data labels inside the donut segments
+                    id: 'dataLabels',
+                    afterDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        const datasets = chart.data.datasets[0];
+                        const total = datasets.data.reduce((a, b) => a + b, 0);
+
+                        chart.data.datasets[0].data.forEach((value, index) => {
+                            const meta = chart.getDatasetMeta(0);
+                            const arc = meta.data[index];
+
+                            // Skip if arc is not visible
+                            if (!arc.active) {
+                                const percentage = ((value / total) * 100).toFixed(1);
+
+                                if (value !== 0 && percentage !== '0.0') {
+
+                                    // Calculate position
+                                    const centerX = (chartArea.left + chartArea.right) / 2;
+                                    const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+                                    // Get arc properties
+                                    const startAngle = arc.startAngle;
+                                    const endAngle = arc.endAngle;
+                                    const innerRadius = arc.innerRadius;
+                                    const outerRadius = arc.outerRadius;
+
+                                    // Calculate midpoint angle
+                                    const midAngle = (startAngle + endAngle) / 2;
+
+                                    // Position label slightly inside the donut
+                                    const x = centerX + (innerRadius + (outerRadius - innerRadius) * 0.5) * Math.cos(midAngle);
+                                    const y = centerY + (innerRadius + (outerRadius - innerRadius) * 0.5) * Math.sin(midAngle);
+
+                                    // Draw the label
+                                    ctx.save();
+                                    ctx.textAlign = 'center';
+                                    ctx.textBaseline = 'middle';
+                                    ctx.font = 'bold 14px Arial';
+                                    ctx.fillStyle = 'white';
+                                    ctx.fillText(`${value} (${percentage}%)`, x, y);
+                                    ctx.restore();
+                                }
+                            }
+                        });
+                    }
+                },
+                {
+                    // Plugin to draw total findings
+                    beforeDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const width = chart.width;
+                        const height = chart.height;
+
+                        // Draw total findings
+                        ctx.save();
+                        ctx.font = 'bold 18px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(`Total Findings: ${totalFindings}`, width / 2, height - 30);
+                        ctx.restore();
+                    }
+                }
+            ]
+        };
+
+        try {
+            // Render to buffer
+            const buffer = await chartCanvas.renderToBuffer(configuration, 'image/png');
+
+            // Optional: Save to file for debugging
+            fs.writeFileSync('debug-donut-chart.png', buffer);
+
+            // Convert to base64
+            return buffer.toString('base64');
+        } catch (error) {
+            console.error('Donut chart rendering error:', error);
+            throw error;
+        }
+    };
+
+    // Fetch categories and numbers dynamically
+
+
+    const data = await fetchData()
+    const categories = data.categories
+    const findingNumbers = data.findingNumbers
+
+    // Create base64 Column Image
+    const base64ColumnImage = await createColumnChart(findingNumbers, categories);
+
+    // Convert to base64
+    const columnImageSrc = `data:image;base64,${base64ColumnImage}`;
+    const severityData = await fetchSeverityData(audit);
+    const base64Donut = await createDonutChart(
+        severityData.severityData,
+        severityData.totalFindings,
+        severityData.severityLevels
+    );
+    //const base64DonutsSvg= Buffer.from(donutSvg).toString('base64');
+    const donutImageSrc = `data:image;base64,${base64Donut}`;
+    return {
+        chart: {
+            text: ` `,
+            images: [
+                {
+                    image: columnImageSrc,
+                    caption: 'Findings by Categories'
+                },
+                {
+                    image: donutImageSrc,
+                    caption: 'Findings by Severity'
+                }
+            ]
+        }
+    };
+}
 
 // Filters helper: handles the use of preformated easilly translatable strings.
 // Source: https://www.tutorialstonight.com/javascript-string-format.php
@@ -143,12 +483,12 @@ function parser(tag) {
 }
 function cvssStrToObject(cvss) {
     var initialState = 'Not Defined'
-    var res = {AV:initialState, AC:initialState, PR:initialState, UI:initialState, S:initialState, C:initialState, I:initialState, A:initialState, E:initialState, RL:initialState, RC:initialState, CR:initialState, IR:initialState, AR:initialState, MAV:initialState, MAC:initialState, MPR:initialState, MUI:initialState, MS:initialState, MC:initialState, MI:initialState, MA:initialState};
+    var res = { AV: initialState, AC: initialState, PR: initialState, UI: initialState, S: initialState, C: initialState, I: initialState, A: initialState, E: initialState, RL: initialState, RC: initialState, CR: initialState, IR: initialState, AR: initialState, MAV: initialState, MAC: initialState, MPR: initialState, MUI: initialState, MS: initialState, MC: initialState, MI: initialState, MA: initialState };
     if (cvss) {
         var temp = cvss.split('/');
-        for (var i=0; i<temp.length; i++) {
+        for (var i = 0; i < temp.length; i++) {
             var elt = temp[i].split(':');
-            switch(elt[0]) {
+            switch (elt[0]) {
                 case "AV":
                     if (elt[1] === "N") res.AV = "Network"
                     else if (elt[1] === "A") res.AV = "Adjacent Network"
@@ -296,10 +636,10 @@ async function prepAuditData(data, settings) {
     var criticalColor = settings.report.public.cvssColors.criticalColor.replace('#', ''); //default of black ("#212121")
 
     var cellNoneColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="' + noneColor + '"/></w:tcPr>';
-    var cellLowColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="'+lowColor+'"/></w:tcPr>';
-    var cellMediumColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="'+mediumColor+'"/></w:tcPr>';
-    var cellHighColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="'+highColor+'"/></w:tcPr>';
-    var cellCriticalColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="'+criticalColor+'"/></w:tcPr>';
+    var cellLowColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="' + lowColor + '"/></w:tcPr>';
+    var cellMediumColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="' + mediumColor + '"/></w:tcPr>';
+    var cellHighColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="' + highColor + '"/></w:tcPr>';
+    var cellCriticalColor = '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="' + criticalColor + '"/></w:tcPr>';
 
     var result = {}
     result.name = data.name || "undefined"
@@ -443,7 +783,7 @@ async function prepAuditData(data, settings) {
     result.categories = _
         .chain(result.findings)
         .groupBy("category")
-        .map((value,key) => {return {categoryName:key, categoryFindings:value}})
+        .map((value, key) => { return { categoryName: key, categoryFindings: value } })
         .value()
 
     result.creator = {}
@@ -457,7 +797,7 @@ async function prepAuditData(data, settings) {
     }
 
     for (var section of data.sections) {
-        var formatSection = { 
+        var formatSection = {
             name: $t(section.name)
         }
         if (section.text) // keep text for retrocompatibility
@@ -485,14 +825,14 @@ async function splitHTMLParagraphs(data) {
 
     var splitted = data.split(/(<img.+?src=".*?".+?alt=".*?".*?>)/)
 
-    for (var value of splitted){
+    for (var value of splitted) {
         if (value.startsWith("<img")) {
             var src = value.match(/<img.+src="(.*?)"/) || ""
             var alt = value.match(/<img.+alt="(.*?)"/) || ""
             if (src && src.length > 1) src = src[1]
             if (alt && alt.length > 1) alt = _.unescape(alt[1])
 
-            if (!src.startsWith('data')){
+            if (!src.startsWith('data')) {
                 try {
                     src = (await Image.getOne(src)).value
                 } catch (error) {
@@ -500,26 +840,37 @@ async function splitHTMLParagraphs(data) {
                 }
             }
             if (result.length === 0)
-                result.push({text: "", images: []})
-            result[result.length-1].images.push({image: src, caption: alt})
+                result.push({ text: "", images: [] })
+            result[result.length - 1].images.push({ image: src, caption: alt })
         }
         else if (value === "") {
             continue
         }
         else {
-            result.push({text: value, images: []})
+            result.push({ text: value, images: [] })
         }
     }
     return result
 }
 
-function replaceSubTemplating(o, originalData = o){
+async function processChartImageForDocx(svg) {
+    // Convert SVG to base64
+    const base64Image = Buffer.from(svg).toString('base64');
+    const imageSrc = `data:image/svg+xml;base64,${base64Image}`;
+
+    // Create a simple image paragraph
+    const imageParagraph = `<p><img src="${imageSrc}" alt="Chart" width="600" height="300" /></p>`;
+
+    return [imageParagraph];
+}
+
+function replaceSubTemplating(o, originalData = o) {
     var regexp = /\{_\{([a-zA-Z0-9\[\]\_\.]{1,})\}_\}/gm;
     if (Array.isArray(o))
         o.forEach(key => replaceSubTemplating(key, originalData))
     else if (typeof o === 'object' && !!o) {
         Object.keys(o).forEach(key => {
-            if (typeof o[key] === 'string') o[key] = o[key].replace(regexp, (match, word) =>  _.get(originalData,word.trim(),''))
+            if (typeof o[key] === 'string') o[key] = o[key].replace(regexp, (match, word) => _.get(originalData, word.trim(), ''))
             else replaceSubTemplating(o[key], originalData)
         })
     }

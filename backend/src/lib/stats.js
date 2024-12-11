@@ -118,3 +118,4 @@ const getFindingSeverity = (finding, audit) => {
     }
     return severity
 };
+exports.getFindingSeverity = getFindingSeverity;
