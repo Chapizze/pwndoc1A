@@ -15,12 +15,12 @@ module.exports = function(app) {
 
     // Create template
     app.post("/api/templates", acl.hasPermission('templates:create'), function(req, res) {
-        if (!req.body.name || !req.body.file || !req.body.ext) {
+        if (!req.body.name || !req.body.file) {
             Response.BadParameters(res, 'Missing required parameters: name, ext, file');
             return;
         }
 
-        if (!utils.validFilename(req.body.name) || !utils.validFilename(req.body.ext)) {
+        if (!utils.validFilename(req.body.name)) {
             Response.BadParameters(res, 'Bad name or ext format');
             return;
         }
@@ -28,7 +28,7 @@ module.exports = function(app) {
         var template = {};
         // Required parameters
         template.name = req.body.name;
-        template.ext = req.body.ext
+        template.ext = "docx"
 
         Template.create(template)
         .then(data => {
@@ -49,25 +49,25 @@ module.exports = function(app) {
         var template = {};
         // Optional parameters
         if (req.body.name) template.name = req.body.name;
-        if (req.body.file && req.body.ext) template.ext = req.body.ext;
+        if (req.body.file) template.ext = 'docx';
 
         Template.update(req.params.templateId, template)
         .then(data => {
             // Update file only
-            if (!req.body.name && req.body.file && req.body.ext) {
+            if (!req.body.name && req.body.file) {
                 var fileBuffer = Buffer.from(req.body.file, 'base64');
                 try {fs.unlinkSync(`${__basedir}/../report-templates/${data.name}.${data.ext || 'docx'}`)} catch {}
-                fs.writeFileSync(`${__basedir}/../report-templates/${data.name}.${req.body.ext}`, fileBuffer);
+                fs.writeFileSync(`${__basedir}/../report-templates/${data.name}.docx`, fileBuffer);
             }
             // Update name only
             else if (req.body.name && !req.body.file) {
                 fs.renameSync(`${__basedir}/../report-templates/${data.name}.${data.ext || 'docx'}`, `${__basedir}/../report-templates/${req.body.name}.${data.ext || 'docx'}`);
             }
             // Update both name and file
-            else if (req.body.name && req.body.file && req.body.ext) {
+            else if (req.body.name && req.body.file) {
                 var fileBuffer = Buffer.from(req.body.file, 'base64');
                 try {fs.unlinkSync(`${__basedir}/../report-templates/${data.name}.${data.ext || 'docx'}`)} catch {}
-                fs.writeFileSync(`${__basedir}/../report-templates/${req.body.name}.${req.body.ext}`, fileBuffer);
+                fs.writeFileSync(`${__basedir}/../report-templates/${req.body.name}.docx`, fileBuffer);
             }
             Response.Ok(res, 'Template updated successfully');
         })

@@ -35,8 +35,7 @@ export default {
     const errors = reactive({ name: '', file: '' });
     const currentTemplate = reactive({
       name: '',
-      file: '',
-      ext: '',
+      file: ''
     });
     const templateId = ref('');
 
@@ -167,7 +166,6 @@ export default {
       cleanErrors();
       currentTemplate.name = '';
       currentTemplate.file = '';
-      currentTemplate.ext = '';
       templateId.value = '';
     };
 
@@ -179,7 +177,6 @@ export default {
         currentTemplate.file = fileReader.result.split(',')[1];
       };
 
-      currentTemplate.ext = file.name.split('.').pop();
       fileReader.readAsDataURL(file);
     };
 
