@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango1.0-dev \
     libjpeg-dev \
     libgif-dev \
+    librsvg2-dev  \
     libpixman-1-dev \
     libpangomm-1.4-dev \
     libfreetype6-dev \
