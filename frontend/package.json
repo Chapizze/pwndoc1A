@@ -21,7 +21,7 @@
     "@tiptap/starter-kit": "^2.4.0",
     "@tiptap/vue-3": "^2.10.2",
     "autoprefixer": "^10.4.20",
-    "axios": "^0.18.1",
+    "axios": "^1.7.9",
     "core-js": "^3.37.1",
     "diff": "^4.0.2",
     "js-yaml": "^4.1.0",
@@ -45,7 +45,7 @@
     "@quasar/app-webpack": "^3.15.1",
     "@quasar/cli": "^2.4.1",
     "devtron": "^1.4.0",
-    "electron": "^2.0.0",
+    "electron": "^33.2.1",
     "electron-debug": "^1.5.0",
     "electron-devtools-installer": "^2.2.4",
     "strip-ansi": "^3.0.1"
