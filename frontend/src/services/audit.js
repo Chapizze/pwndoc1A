@@ -4,10 +4,7 @@ export default {
   getAudits: function(filters) {
     let queryParams = ''
     if (filters) {
-      if (filters.findingTitle)
-        queryParams = `?filter=${filters.findingTitle}`
-      if (filters.type)
-        queryParams = `?filter=${filters.type}`
+     queryParams = `?filters=${filters}`
     }
     return axiosInstance.get(`audits${queryParams}`)
   },

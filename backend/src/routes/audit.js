@@ -15,14 +15,10 @@ module.exports = function(app, io) {
         var getUsersRoom = function(room) {
             return utils.getSockets(io, room).map(s => s.username)
         }
-        var filters = {};
-        if (req.query.findingTitle) 
-            filters['findings.title'] = new RegExp(utils.escapeRegex(req.query.findingTitle), 'i')
-        if (req.query.type && req.query.type === 'default')
-            filters.$or = [{type: 'default'}, {type: {$exists:false}}]
-        if (req.query.type && ['multi', 'retest'].includes(req.query.type))
-            filters.type = req.query.type
-            
+        if (req.query.filters) {
+            var filters = {}
+            filters['findings.filter'] = utils.escapeRegex(req.query.filters)
+        }
         Audit.getAudits(acl.isAllowed(req.decodedToken.role, 'audits:read-all'), req.decodedToken.id, filters)
         .then(msg => {
                 var result = []

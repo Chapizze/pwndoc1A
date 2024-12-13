@@ -170,7 +170,7 @@
   </template>
 
 <script>
-import { ref, reactive, computed, onMounted, getCurrentInstance } from 'vue';
+import { ref, reactive, computed, onMounted, getCurrentInstance, watch, isRef } from 'vue';
 import { Dialog, Notify, QSpinnerGears } from 'quasar';
 
 import AuditStateIcon from 'components/audit-state-icon';
@@ -255,14 +255,25 @@ export default {
         console.log(err);
       }
     };
+    const isAllowedAudits = async (auditsToFilter) => {
+      return auditsToFilter.filter(audit => 
+        user.value.id === audit.creator._id ||
+        (audit.collaborators && audit.collaborators.some(collaborator => 
+          user.value.id === collaborator._id
+        )) ||
+        isAllowed('*')
+      )
+    }
 
     const getAudits = async () => {
       loading.value = true;
       try {
-        const data = await AuditService.getAudits({ findingTitle: search.filter });
+        const data = await AuditService.getAudits(search.finding);
         audits.value = data.data.datas;
+        auditsAllowed.value = await isAllowedAudits(audits.value)       
         loading.value = false;
       } catch (err) {
+        loading.value = false
         console.log(err);
       }
     };
@@ -454,25 +465,6 @@ export default {
       await getLanguages();
       await getAuditTypes();
       await getCompanies();
-      audits.value.forEach(audit => {
-        switch (true) {
-            case user.value.id === audit.creator._id:
-              auditsAllowed.value.push(audit);
-              break;
-
-            case audit.collaborators && audit.collaborators.some(collaborator => user.value.id === collaborator._id):
-              auditsAllowed.value.push(audit);
-              break;
-
-            case isAllowed('*'):
-              auditsAllowed.value.push(audit);
-              break;
-
-            default:
-              break;
-        }
-      });
-
       if (settings?.reviews?.enabled ?? false) {
         visibleColumns.value.push('reviews');
       }

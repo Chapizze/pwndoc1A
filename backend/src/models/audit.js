@@ -86,8 +86,8 @@ var AuditSchema = new Schema({
     date_start:         String,
     date_end:           String,
     summary:            String,
-    company:            {type: Schema.Types.ObjectId, ref: 'Company'},
-    client:             {type: Schema.Types.ObjectId, ref: 'Client'},
+    company:            {type: Schema.Types.ObjectId, ref: 'Company', default: null},
+    client:             {type: Schema.Types.ObjectId, ref: 'Client', default: null},
     collaborators:      [{type: Schema.Types.ObjectId, ref: 'User'}],
     reviewers:          [{type: Schema.Types.ObjectId, ref: 'User'}],
     language:           {type: String, required: true},
@@ -134,7 +134,7 @@ AuditSchema.statics.getAudits = (isAdmin, userId, filters) => {
             if (filters) {
                 const tab = [];
                 for (const row of rows) {
-                    const audit = await Audit.getAudit(true, row._id, userId)
+                    const audit = await Audit.getAudit(isAdmin, row._id, userId)
                     const lowercaseFilter = filters['findings.filter']?.toLowerCase();
                     if (
                         (audit.name && audit.name?.toLowerCase()?.match(lowercaseFilter)) ||
