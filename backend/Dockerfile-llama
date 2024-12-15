@@ -1,0 +1,8 @@
+#Author : Chapizze
+FROM chapizze/llama:1.0
+
+WORKDIR /llama.cpp
+
+EXPOSE 8888
+
+CMD ./build/bin/llama-server --api-key foobar -m models/Llama-3.2-1B-Instruct-Q6_K.gguf -ngl 0 -a llama --host 0.0.0.0 --port 8888 -c 8192

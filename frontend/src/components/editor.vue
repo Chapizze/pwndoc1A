@@ -1,5 +1,5 @@
 <template>
-    <q-card flat bordered class="editor full-width" :class="affixRelativeElement" :style="(editable)?'':'border: 1px dashed lightgrey'">
+    <q-card flat bordered class="editor full-width" :class="affixRelativeElement" :style="(editable)?'':'border: 5px dashed lightgrey; background-color: #f0f0f0;'">
         <affix :relative-element-selector="'.'+affixRelativeElement" :enabled="!noAffix && !diff" class="bg-grey-4" v-if="editable || diff">
                 <q-toolbar class="editor-toolbar">
                     <template v-if="editable">
@@ -171,6 +171,13 @@
                             <q-tooltip :delay="500" content-class="text-bold">Redo (Ctrl+Shift+Z)</q-tooltip>
                             <q-icon name="redo" />
                         </q-btn>
+
+                        <q-btn flat size="sm" dense
+                        @click="rephraseContent"
+                        >
+                            <q-tooltip :delay="500" content-class="text-bold">Rephrase - AI powered</q-tooltip>
+                            <q-icon name="auto_awesome" />
+                        </q-btn>
     
                     </template>
                     <div v-if="diff !== undefined && (diff || value) && value !== diff">
@@ -188,9 +195,9 @@
     </q-card>
     </template>
     
-    <script>
-    // Import the editor
-    import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+<script>
+// Import the editor
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { Editor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -200,6 +207,9 @@ import TrailingNode from './editor-trailing-node';
 import Diff from 'diff';
 import Utils from '@/services/utils';
 import ImageService from '@/services/image';
+import AIService from '@/services/ai';
+import { Notify } from 'quasar';
+
 
 export default {
   name: 'BasicEditor',
@@ -263,6 +273,103 @@ export default {
       affixRelativeElement: `affix-relative-element-${Math.floor(Math.random() * 1000000 + 1)}`,
       htmlEncode: Utils.htmlEncode,
     });
+
+    // Author : Chapizze
+    const rephraseContent = async () => {
+      const data = {};
+      const selection = editor.value.state.selection;
+      const selectedText = editor.value.state.doc.textBetween(selection.from, selection.to, ' ');
+
+      if (!selectedText) {
+        Notify.create({
+          message: 'Please select some text to rephrase.',
+          color: 'negative',
+          position: 'top',
+        });
+        return;
+      }
+
+      data.content = selectedText;
+
+      try {
+        const rephrased = await AIService.rephrase(data);
+        const text = rephrased.data.datas;
+
+        // Create a modal for the suggestion
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '50%';
+        modal.style.left = '50%';
+        modal.style.transform = 'translate(-50%, -50%)';
+        modal.style.backgroundColor = 'white';
+        modal.style.padding = '20px';
+        modal.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.5)';
+        modal.style.zIndex = '1000';
+        modal.style.width = '80%';
+        modal.style.maxWidth = '600px';
+        modal.style.borderRadius = '8px';
+        modal.style.fontFamily = 'Arial, sans-serif';
+
+        // Create the old text container
+        const oldTextContainer = document.createElement('div');
+        oldTextContainer.style.color = 'red';
+        oldTextContainer.style.marginBottom = '10px';
+        oldTextContainer.innerHTML = `<strong>Old Text:</strong><br>${data.content}`;
+
+        // Create the suggestion text container
+        const suggestionTextContainer = document.createElement('div');
+        suggestionTextContainer.style.color = 'green';
+        suggestionTextContainer.style.marginBottom = '10px';
+        suggestionTextContainer.innerHTML = `<strong>AI Suggestion:</strong><br>${text}`;
+
+        // Create buttons for accepting or rejecting the suggestion
+        const acceptButton = document.createElement('button');
+        acceptButton.innerText = 'Accept AI Suggestion';
+        acceptButton.style.marginRight = '10px';
+        acceptButton.style.backgroundColor = 'green';
+        acceptButton.style.color = 'white';
+        acceptButton.style.border = 'none';
+        acceptButton.style.padding = '10px 20px';
+        acceptButton.style.borderRadius = '5px';
+        acceptButton.style.cursor = 'pointer';
+        acceptButton.style.fontSize = '16px';
+
+        const rejectButton = document.createElement('button');
+        rejectButton.innerText = 'Keep Old Text';
+        rejectButton.style.backgroundColor = 'red';
+        rejectButton.style.color = 'white';
+        rejectButton.style.border = 'none';
+        rejectButton.style.padding = '10px 20px';
+        rejectButton.style.borderRadius = '5px';
+        rejectButton.style.cursor = 'pointer';
+        rejectButton.style.fontSize = '16px';
+
+        // Append elements to the modal
+        modal.appendChild(oldTextContainer);
+        modal.appendChild(suggestionTextContainer);
+        modal.appendChild(acceptButton);
+        modal.appendChild(rejectButton);
+
+        // Append the modal to the body
+        document.body.appendChild(modal);
+
+        // Add event listeners to the buttons
+        acceptButton.addEventListener('click', () => {
+          editor.value.chain().focus()
+            .deleteSelection()
+            .insertContent(text)
+            .run();
+          document.body.removeChild(modal);
+        });
+
+        rejectButton.addEventListener('click', () => {
+          document.body.removeChild(modal);
+        });
+
+      } catch (error) {
+        console.log(error);
+      }
+    };
 
     const updateHTML = () => {
       state.json = editor.value.getJSON();
@@ -377,6 +484,7 @@ export default {
       importImage,
       updateHTML,
       convertParagraphsToHTML,
+      rephraseContent
     };
   },
 };

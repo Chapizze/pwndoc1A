@@ -47,6 +47,18 @@ services:
     networks:
       - backend
 
+  pwndoc-ai:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile-llama
+    image: chapizze/llama:1.0
+    container_name: llama-server
+    restart: always
+    ports:
+      - 8888:8888
+    networks:
+      - backend
+
 volumes:
   mongo-data:
 

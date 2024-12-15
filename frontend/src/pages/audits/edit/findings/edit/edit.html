@@ -82,7 +82,7 @@
                                     label-slot borderless stack-label
                                     :rules="(settings?.report?.public?.requiredFields?.findingDescription) ? [val => !!finding.description || t('fieldIsRequired')] : ['']"
                                     lazy-rules="ondemand">
-                                    <template v-slot="control">
+                                    <template v-slot:control>
                                         <basic-editor ref="basiceditor_description" noSync v-model="finding.description"
                                             :editable="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" />
                                         <q-badge v-if="$parent.$parent.commentMode" color="deep-purple" floating
@@ -104,7 +104,7 @@
                                     borderless label-slot stack-label
                                     :rules="(settings?.report?.public?.requiredFields.findingObservation) ? [val => !!finding.observation || t('fieldIsRequired')] : ['']"
                                     lazy-rules="ondemand">
-                                    <template v-slot="control">
+                                    <template v-slot:control>
                                         <basic-editor ref="basiceditor_observation" noSync v-model="finding.observation"
                                             :editable="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" />
                                         <q-badge v-if="$parent.$parent.commentMode" color="deep-purple" floating
@@ -185,7 +185,7 @@
                                     borderless label-slot stack-label
                                     :rules="(settings?.report?.public?.requiredFields.findingProofs) ? [val => !!finding.poc || t('fieldIsRequired')] : ['']"
                                     lazy-rules="ondemand">
-                                    <template v-slot="control">
+                                    <template v-slot:control>
                                         <basic-editor ref="basiceditor_poc" noSync v-model="finding.poc"
                                             :editable="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" />
                                         <q-badge v-if="$parent.$parent.commentMode" color="deep-purple" floating
@@ -216,7 +216,7 @@
                                         borderless label-slot stack-label
                                         :rules="(settings?.report?.public?.requiredFields.findingAffected) ? [val => !!finding.scope || t('fieldIsRequired')] : ['']"
                                         lazy-rules="ondemand">
-                                        <template v-slot="control">
+                                        <template v-slot:control>
                                             <basic-editor v-model="finding.scope" :toolbar="['format', 'marks', 'list']"
                                                 :editable="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" />
                                             <q-badge v-if="$parent.$parent.commentMode" color="deep-purple" floating
@@ -296,7 +296,7 @@
                                         borderless label-slot stack-label
                                         :rules="(settings?.report?.public?.requiredFields.findingRemediation) ? [val => !!finding.remediation || t('fieldIsRequired')] : ['']"
                                         lazy-rules="ondemand">
-                                        <template v-slot="control">
+                                        <template v-slot:control>
                                             <basic-editor ref="basiceditor_remediation" noSync
                                                 v-model="finding.remediation"
                                                 :editable="frontEndAuditState === AUDIT_VIEW_STATE.EDIT" />
@@ -564,7 +564,7 @@
                             :rules="(settings?.report?.public?.requiredFields?.retestDescription) ? [val => !!finding.retestDescription || t('fieldIsRequired')] : ['']"
                             lazy-rules="ondemand"
                             >
-                                <template v-slot="control">
+                                <template v-slot:control>
                                     <basic-editor ref="basiceditor_retestdescription" v-model="finding.retestDescription" :editable="frontEndAuditState === AUDIT_VIEW_STATE.EDIT"/>
                                 </template>
                                 <template v-slot:label>
@@ -609,7 +609,7 @@
                         borderless
                         stack-label
                         >
-                            <template v-slot="control">
+                            <template v-slot:control>
                                 <basic-editor ref="basiceditor_description" noSync v-model="finding.description" :editable="false"/>
                             </template>
                         </q-field>
@@ -619,7 +619,7 @@
                         :label="t('observation')"
                         stack-label
                         >
-                            <template v-slot="control">
+                            <template v-slot:control>
                                 <basic-editor ref="basiceditor_observation" noSync v-model="finding.observation" :editable="false"/>
                             </template>
                         </q-field>
@@ -637,7 +637,7 @@
                         :label="t('proofs')"
                         stack-label
                         >
-                            <template v-slot="control">
+                            <template v-slot:control>
                                 <basic-editor ref="basiceditor_poc" noSync v-model="finding.poc" :editable="false"/>
                             </template>
                         </q-field>
@@ -649,7 +649,7 @@
                         :label="t('affectedAssets')"
                         stack-label
                         >
-                            <template v-slot="control">
+                            <template v-slot:control>
                                 <basic-editor v-model="finding.scope" :editable="false"/>
                             </template>
                         </q-field>
@@ -697,7 +697,7 @@
                         borderless
                         stack-label
                         >
-                            <template v-slot="control">
+                            <template v-slot:control>
                                 <basic-editor ref="basiceditor_remediation" noSync v-model="finding.remediation" :editable="false"/>
                             </template>
                         </q-field>
