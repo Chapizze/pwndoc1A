@@ -1,4 +1,4 @@
-import sso from '../config/config.json'
+import sso from '../../config/config.json'
 
 var isSSO = sso.isSSO;
 

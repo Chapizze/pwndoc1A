@@ -1,7 +1,7 @@
 import axios from 'axios'
 import {clearUser } from '@/services/user'
 import Router from '../router'
-import config from '../config/config.json';
+import config from '../../config/config.json';
 const isSSO = config.isSSO;
 
 const axiosInstance = axios.create({
