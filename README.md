@@ -28,7 +28,7 @@ Depending on your operating system:
 ## Ubuntu/Debian
 
 ```bash 
-sudo apt-get update sudo apt-get install jq
+sudo apt-get update && sudo apt-get install jq
 ```
 
 ## macOS (using Homebrew)
