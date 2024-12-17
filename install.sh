@@ -159,13 +159,13 @@ get_sso_config() {
             .test.login.provider = "disabled"' backend/src/config/config.json > temp.json && mv temp.json backend/src/config/config.json
 
         # Update frontend config
-        jq '.isSSO = true' frontend/src/config/config.json > temp.json && mv temp.json frontend/src/config/config.json
+        jq '.isSSO = true' frontend/config/config.json > temp.json && mv temp.json frontend/config/config.json
 
         echo -e "${GREEN}SSO configuration completed successfully!${NC}"
     else
         # If no SSO, ensure configs are set to disabled/false
         jq '.dev.login.provider = "disabled" | .prod.login.provider = "disabled" | .test.login.provider = "disabled"' backend/src/config/config.json > temp.json && mv temp.json backend/src/config/config.json
-        jq '.isSSO = false' frontend/src/config/config.json > temp.json && mv temp.json frontend/src/config/config.json
+        jq '.isSSO = false' frontend/config/config.json > temp.json && mv temp.json frontend/config/config.json
 
         echo -e "${YELLOW}SSO configuration skipped. Default settings applied.${NC}"
     fi
