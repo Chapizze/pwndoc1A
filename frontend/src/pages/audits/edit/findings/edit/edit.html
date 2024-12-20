@@ -3,6 +3,10 @@
         :approvals="parentApprovals" :path="(audit.parentId) ? `/audits/${audit.parentId}` : ''"
         :path-name="(audit.type === 'retest') ? t('originalAudit') : (audit.type === 'default') ? t('multi') : ''">
         <template #buttons>
+            <div style="margin-left: 10px;">
+                <strong>{{"Creator : "}} </strong>
+                {{ finding.creator}}
+            </div>
             <q-btn color="primary" :flat="!$parent.$parent.commentMode" :outline="$parent.$parent.commentMode"
                 :class="{'bg-grey-3': $parent.$parent.commentMode}" icon="o_mode_comment" :ripple="false"
                 @click="toggleCommentView()" class="q-mr-sm">

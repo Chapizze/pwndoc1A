@@ -55,7 +55,7 @@ services:
     container_name: llama-server
     restart: always
     ports:
-      - 8888:8888
+      - 127.0.0.1:8888:8888
     networks:
       - backend
 

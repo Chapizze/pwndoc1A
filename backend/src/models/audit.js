@@ -38,7 +38,9 @@ var Finding = {
     customFields:           [customField],
     retestStatus:           {type: String, enum: ['ok', 'ko', 'unknown', 'partial']},
     retestDescription:      String,
-    attachments:            [{type: Schema.Types.ObjectId, ref: 'Attachment'}]
+    attachments:            [{type: Schema.Types.ObjectId, ref: 'Attachment'}],
+    creator:                {type: Schema.Types.ObjectId, ref: 'User'},
+
 }
 
 var Service = {
@@ -619,6 +621,7 @@ AuditSchema.statics.updateNetwork = (isAdmin, auditId, userId, scope) => {
 // Create finding
 AuditSchema.statics.createFinding = (isAdmin, auditId, userId, finding) => {
     return new Promise((resolve, reject) => { 
+        finding.creator = userId
         Audit.getLastFindingIdentifier(auditId)
         .then(identifier => {
             finding.identifier = ++identifier
@@ -691,6 +694,10 @@ AuditSchema.statics.getFinding = (isAdmin, auditId, userId, findingId) => {
             let attachments =  await Attachment.getMetadata(finding.attachments);
             finding = finding.toObject();
             finding.attachments = attachments;
+
+            var User = mongoose.model('User')
+            let user = await User.findById(finding.creator)
+            finding.creator = user.firstname
             if (finding === null) 
                 throw({fn: 'NotFound', message: 'Finding not found'})
             else {

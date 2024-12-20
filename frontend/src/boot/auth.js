@@ -1,5 +1,5 @@
 import {refreshToken, isAuth} from '@/services/user'
-import config from '../../config/config.json'
+import config from '../config/config.json'
 import { ref } from 'vue'
 import router from '../router/index'
 
