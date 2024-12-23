@@ -46,20 +46,20 @@ async function getFindingBySeverity(isAllowed, userId, year) {
 
         const audits = await Audit.getAudits(isAllowed, userId);
 
-        
+
         if (isNaN(year) || year < 2020 || year > 2030) {
-                reject("Invalid year parameter");
+            reject("Invalid year parameter");
         }
 
         var filteredAuditsByYear = []
         audits.forEach(audit => {
             const auditYear = new Date(audit.createdAt).getFullYear();
-            if(auditYear == year){
+            if (auditYear == year) {
                 filteredAuditsByYear.push(audit)
             }
         })
 
-        var data = [0,0,0,0];
+        var data = [0, 0, 0, 0];
         var criticalfindingcount = 0;
         var highfindingcount = 0;
         var mediumfindingcount = 0;
@@ -69,33 +69,33 @@ async function getFindingBySeverity(isAllowed, userId, year) {
         for (const smallaudit of filteredAuditsByYear) {
             const audit = await Audit.getAudit(isAllowed, smallaudit.id, userId);
 
-            for(const finding of audit.findings) {
+            for (const finding of audit.findings) {
                 const sev = getFindingSeverity(finding, audit)
-                
-                switch(sev) {
-					case "Low": 
-						lowfindingcount += 1;
+
+                switch (sev) {
+                    case "Low":
+                        lowfindingcount += 1;
                         break;
-					case "Medium":
-						mediumfindingcount += 1;
+                    case "Medium":
+                        mediumfindingcount += 1;
                         break;
-					case "High":
-						highfindingcount += 1;
+                    case "High":
+                        highfindingcount += 1;
                         break;
-					case "Critical":
-						criticalfindingcount += 1;
+                    case "Critical":
+                        criticalfindingcount += 1;
                         break;
-					default:
-						break;
-				}
-                
+                    default:
+                        break;
+                }
+
             }
         }
         data[0] = criticalfindingcount;
         data[1] = highfindingcount;
         data[2] = mediumfindingcount;
         data[3] = lowfindingcount;
-        
+
         resolve(data)
     })
 }
@@ -119,3 +119,47 @@ const getFindingSeverity = (finding, audit) => {
     return severity
 };
 exports.getFindingSeverity = getFindingSeverity;
+
+
+async function getFindingByCategoryAudit(isAllowed, auditId, userId) {
+
+    return new Promise(async (resolve, reject) => {
+
+        try {
+            const categories = await VulnerabilityCategory.getAll();
+            const audit = await Audit.getAudit(isAllowed, auditId, userId);
+            const year = new Date(audit.updatedAt).getFullYear();
+
+            const data = [];
+
+            for (const finding of audit.findings) {
+                const category = categories.find(cat => cat.name === finding.category);
+                if (category) {
+                    const index = data.findIndex(d => d.year === year);
+                    if (index === -1) {
+                        data.push({ year: year, data: [] });
+                    }
+                    const yearData = data.find(d => d.year === year);
+                    const index2 = yearData.data.findIndex(d => d.category === category.name);
+                    if (index2 === -1) {
+                        yearData.data.push({ category: category.name, count: 1 });
+                    } else {
+                        yearData.data[index2].count++;
+                    }
+                }
+            }
+            const formattedData = data.map(d => ({
+                name: d.year,
+                data: d.data.map(item => item.count)
+            }))
+
+            resolve(formattedData)
+        }
+        catch(err){
+            reject(err)
+        }
+        })
+       
+
+}
+exports.getFindingByCategoryAudit = getFindingByCategoryAudit;
