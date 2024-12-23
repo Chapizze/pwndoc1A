@@ -80,15 +80,19 @@ async function generateDoc(audit, userId) {
         console.log(err)
     }
     expressionParser.filters = { ...expressions, ...customGenerator.expressions }
-    var doc = new Docxtemplater().attachModule(imageModule).loadZip(zip).setOptions({ parser: parser, paragraphLoop: true });
-    customGenerator.apply(preppedAudit);
-    doc.setData({
-        ...preppedAudit,
-        ...(await prepChartData(audit, userId))
+    var doc = new Docxtemplater(zip, {
+        parser: parser,
+        paragraphLoop: true,
+        linebreaks: true,
+        modules: [imageModule]
     });
+    customGenerator.apply(preppedAudit);
 
     try {
-        doc.render();
+        doc.render({
+            ...preppedAudit,
+            ...(await prepChartData(audit, userId))
+        });
     }
     catch (error) {
         if (error.properties.id === 'multi_error') {
@@ -119,7 +123,7 @@ exports.generateDoc = generateDoc;
 async function prepChartData(audit, userId) {
     async function fetchData() {
 
-        const findingNumbers = await Stats.getFindingByCategory(true, userId)
+        const findingNumbers = await Stats.getFindingByCategoryAudit(true, audit._id, userId)
 
         const categories = []
         for (const finding of audit.findings) {
