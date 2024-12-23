@@ -82,7 +82,7 @@
                 <q-btn size="sm" flat color="primary" :to="'/audits/' + props.row._id" icon="fa fa-edit" v-if="props.row">
                   <q-tooltip anchor="bottom middle" self="center left" :delay="500" content-class="text-bold">{{ t('tooltip.editAudit') }}</q-tooltip> 
                 </q-btn>
-                <q-btn size="sm" flat color="info" @click="generateReport(props.row._id)" icon="fa fa-download" v-if="props.row">
+                <q-btn size="sm" flat color="info" @click="generateReport(props.row)" icon="fa fa-download" v-if="props.row">
                   <q-tooltip anchor="bottom middle" self="center left" :delay="500" content-class="text-bold">{{ t('tooltip.downloadReport') }}</q-tooltip> 
                 </q-btn>
                 <q-btn size="sm" flat color="negative" @click="confirmDeleteAudit(props.row)" icon="fa fa-trash" v-if="props.row">
@@ -345,7 +345,7 @@ export default {
       });
     };
 
-    const generateReport = async auditId => {
+    const generateReport = async (row) => {
       const downloadNotif = Notify.create({
         spinner: QSpinnerGears,
         message: 'Generating the Report',
@@ -354,12 +354,11 @@ export default {
         group: false,
       });
       try {
-        const audit = await AuditService.generateAuditReport(auditId);
-        const auditNew = audit.data.datas;
-        var blob = new Blob([Buffer.from(auditNew.blob, 'base64')], { type: 'application/octet-stream' });
+        const data = await AuditService.generateAuditReport(row._id);
+			  var blob = new Blob([data.data], {type: "application/octet-stream"});
         var link = document.createElement('a');
         link.href = window.URL.createObjectURL(blob);
-        const title = auditNew.name.concat('_', 'report', '.docx');
+        const title = row.name.concat('_', 'report', '.docx');
         link.download = title;
         document.body.appendChild(link);
         link.click();
