@@ -432,7 +432,6 @@
 		socket.on('roomUsers', (newusers) => {
 		  var userIndex = 0;
 		  users.value = newusers.map((newuser, index) => {
-			console.log(newuser)
 			if (user.value.username !== newuser.username) {
 			  newuser.color = "#77C84E";
 			  newuser.me = true;
