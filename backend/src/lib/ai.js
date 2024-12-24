@@ -34,12 +34,7 @@ async function rephrase(content) {
     })
     const data = await res.json()
 
-    var text = data.choices[0].message.content;
-
-    const newlineIndex = text.indexOf('\n');
-
-    text = text.slice(newlineIndex +3);
-    text = text.slice(0, -1);
+    const text = data.choices[0].message.content;
   
     return text
 
