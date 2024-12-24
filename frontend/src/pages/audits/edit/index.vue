@@ -257,7 +257,9 @@
 						  </q-item-section>
 						</q-item>
 						<div class="row">
-						  <div v-for="(user,idx) in findingUsers" :key="idx" v-if="user.finding === finding._id" class="col multi-colors-bar" :style="{background:user.color}" />
+							<div v-for="(user,idx) in getUsersForFinding(finding._id)" :key="idx"
+								class="col multi-colors-bar" 
+								:style="{background:user.color}"/>
 						</div>
 					  </div>
 					</q-list>
@@ -346,12 +348,6 @@
 	  const editReply = ref("")
 	  const generalUsers = computed(() => users.value.filter(user => user.menu === 'general'));
 	  const networkUsers = computed(() => users.value.filter(user => user.menu === 'network'));
-	  const findingUsers = computed(() => {
-		  const filteredUsers = users.value.filter(user => user.menu === 'editFinding')
-  
-  
-		  return filteredUsers
-	  })
 	  const sectionUsers = computed(() => users.value.filter(user => user.menu === 'editSection'));
   
 	  const currentAuditType = computed(() => auditTypes.value.find(e => e.name === audit.auditType));
@@ -389,6 +385,12 @@
 						return "blue";
 				}
 			}
+	  };
+
+	  const getUsersForFinding = (findingId) => {
+			return users.value.filter(user => 
+				user.menu === 'editFinding' && user.finding === findingId
+			)
 	  };
   
 	  const getFindingSeverity = (finding) => {
@@ -429,13 +431,14 @@
 		socket.emit('join', { username: user.value.username, room: auditId.value });
 		socket.on('roomUsers', (newusers) => {
 		  var userIndex = 0;
-		  users.value = newusers.map((user, index) => {
-			if (user.username === user.username) {
-			  user.color = "#77C84E";
-			  user.me = true;
+		  users.value = newusers.map((newuser, index) => {
+			console.log(newuser)
+			if (user.value.username !== newuser.username) {
+			  newuser.color = "#77C84E";
+			  newuser.me = true;
 			  userIndex = index;
 			}
-			return user;
+			return newuser;
 		  });
 		  users.value.unshift(users.value.splice(userIndex, 1)[0]);
 		});
@@ -446,7 +449,7 @@
 		  getAudit();
 		});
 		socket.on('disconnect', () => {
-		  socket.emit('join', { username: user.username, room: auditId.value });
+		  socket.emit('join', { username: user.value.username, room: auditId.value });
 		  socket.emit('menu', getMenuSection());
 		});
 	  };
@@ -669,7 +672,7 @@
   
 	  onUnmounted(() => {
 		if (!loading.value) {
-		  socket.emit('leave', { username: user.username, room: auditId.value });
+		  socket.emit('leave', { username: user.value.username, room: auditId.value });
 		  socket.off();
 		}
 	  });
@@ -698,7 +701,6 @@
 		tabAttach,
 		generalUsers,
 		networkUsers,
-		findingUsers,
 		sectionUsers,
 		currentAuditType,
 		getFindingColor,
@@ -716,7 +718,8 @@
 		getAuditTypes,
 		BlobReader,
 		getSortOptions,
-		lighterFindingColor
+		lighterFindingColor,
+		getUsersForFinding
 	  };
 	},
 	components: {

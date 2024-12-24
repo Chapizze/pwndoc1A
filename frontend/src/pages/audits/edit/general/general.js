@@ -390,10 +390,6 @@ export default {
     });
 
     onUnmounted(() => {
-      if (!loading.value) {
-        socket.emit('leave', { username: user.username, room: auditId.value });
-        socket.off();
-      }
       document.removeEventListener('keydown', _listener, false);
     });
 
