@@ -47,7 +47,6 @@
                 @click="cleanCurrentAudit(); $refs.createModal.show()"
               />    
             </template>
-  
             <template v-slot:body-cell-language="props">
               <q-td>
                 {{ props.row && props.row.language ? convertLocale(props.row.language) : '-' }}
@@ -194,7 +193,7 @@ export default {
     const auditTypes = ref([]);
     const companies = ref([]);
     const languages = ref([]);
-    const visibleColumns = ref(['name', 'tr', 'yacUUID', 'users', 'date', 'action']);
+    const visibleColumns = ref(['name', 'auditType', 'language', 'company', 'users', 'date', 'action']);
     const pagination = reactive({
       page: 1,
       rowsPerPage: 25,
@@ -467,6 +466,8 @@ export default {
       if (settings?.reviews?.enabled ?? false) {
         visibleColumns.value.push('reviews');
       }
+      if (isAllowed('audits:users-connected'))
+            visibleColumns.value.push('connected')
     });
 
     return {
