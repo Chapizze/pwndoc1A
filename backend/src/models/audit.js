@@ -4,6 +4,7 @@ const fs = require('fs');
 var key = fs.readFileSync('/run/secrets/key', 'utf8').trim()
 var salt = fs.readFileSync('/run/secrets/salt', 'utf8').trim()
 const CVSS31 = require('../lib/cvsscalc31');
+const CVSS4 = require('../lib/cvsscalc4');
 const { resolveObjectURL } = require('buffer');
 var Schema = mongoose.Schema;
 
@@ -18,6 +19,11 @@ var customField = {
     text:       Schema.Types.Mixed
 }
 
+var cvss = {
+    cvssv3: String,
+    cvssv4: {type: String, default: "CVSS:4.0/AV4:N/AC4:L/AT4:N/PR4:N/UI4:N/VC4:N/VI4:N/VA4:N/SC4:N/SI4:N/SA4:N"}
+}
+
 var Finding = {
     id:                     Schema.Types.ObjectId,
     identifier:             Number, //incremental ID to be shown in the report
@@ -30,6 +36,7 @@ var Finding = {
     priority:               {type: Number, enum: [1,2,3,4]},
     references:             [String],
     cvssv3:                 String,
+    cvss:                   cvss,
     paragraphs:             [Paragraph],
     poc:                    String,
     scope:                  String,
@@ -694,7 +701,7 @@ AuditSchema.statics.getFinding = (isAdmin, auditId, userId, findingId) => {
             let attachments =  await Attachment.getMetadata(finding.attachments);
             finding = finding.toObject();
             finding.attachments = attachments;
-
+            if(finding.cvssv3 && !finding.cvss.cvssv3) finding.cvss.cvssv3 = finding.cvssv3
             var User = mongoose.model('User')
             let user = await User.findById(finding.creator)
             finding.creator = user.firstname

@@ -697,7 +697,9 @@ async function prepAuditData(data, settings) {
 
     result.findings = []
     for (var finding of data.findings) {
-        var tmpCVSS = CVSS31.calculateCVSSFromVector(finding.cvssv3);
+        var tmpCVSS;
+        if(finding.cvssv3) tmpCVSS = CVSS31.calculateCVSSFromVector(finding.cvssv3);
+        else if (finding.cvss.cvssv3) tmpCVSS = CVSS31.calculateCVSSFromVector(finding.cvss.cvssv3);
         var tmpFinding = {
             title: finding.title || "",
             vulnType: $t(finding.vulnType) || "",

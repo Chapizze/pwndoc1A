@@ -327,8 +327,10 @@ module.exports = function(app, io) {
             Response.Forbidden(res, "The audit is not in the EDIT state and therefore cannot be edited.");
             return;
         }
-        
+        var originalFinding = await Audit.getFinding(acl.isAllowed(req.decodedToken.role, 'audits:read'), req.params.auditId, req.decodedToken.id, req.params.findingId);
         var finding = {};
+        // cvss in an object. It will eraise at least one attributes if we do not assign the original value
+        finding.cvss = originalFinding.cvss
         // Optional parameters
         if (req.body.title) finding.title = req.body.title;
         if (req.body.vulnType) finding.vulnType = req.body.vulnType;
@@ -338,7 +340,8 @@ module.exports = function(app, io) {
         if (req.body.remediationComplexity) finding.remediationComplexity = req.body.remediationComplexity;
         if (req.body.priority) finding.priority = req.body.priority;
         if (req.body.references) finding.references = req.body.references;
-        if (req.body.cvssv3) finding.cvssv3 = req.body.cvssv3;
+        if (req.body.cvss.cvssv3) finding.cvss.cvssv3 = req.body.cvss.cvssv3;
+        if (req.body.cvss.cvssv4) finding.cvss.cvssv4 = req.body.cvss.cvssv4;        
         if (!_.isNil(req.body.poc)) finding.poc = req.body.poc;
         if (!_.isNil(req.body.scope)) finding.scope = req.body.scope;
         if (req.body.status !== undefined) finding.status = req.body.status;

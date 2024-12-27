@@ -145,7 +145,7 @@ export default {
         invalidCredentials: 'Invalid credentials',
     },
     cvss: {
-        title: 'CVSS v3.1 Base Score',
+        title: 'CVSS v3.1 / v4.0 Base Score',
         impactSubscore: 'Impact Subscore',
         exploitabilitySubscore: 'Exploitability Subscore',
         infoWhenNoScore: 'Select values for all base metrics to generate score',
@@ -303,6 +303,29 @@ export default {
             MA_L_Label: "Performance is reduced or there are interruptions in resource availability. Even if repeated exploitation of the vulnerability is possible, the attacker does not have the ability to completely deny service to legitimate users. The resources in the impacted component are either partially available all of the time, or fully available only some of the time, but overall there is no direct, serious consequence to the impacted component.",
             MA_H_Label: "There is total loss of availability, resulting in the attacker being able to fully deny access to resources in the impacted component; this loss is either sustained (while the attacker continues to deliver the attack) or persistent (the condition persists even after the attack has completed). Alternatively, the attacker has the ability to deny some availability, but the loss of availability presents a direct, serious consequence to the impacted component (e.g., the attacker cannot disrupt existing connections, but can prevent new connections; the attacker can repeatedly exploit a vulnerability that, in each instance of a successful attack, leaks a only small amount of memory, but after repeated exploitation causes a service to become completely unavailable)."
         }
+    },
+
+    cvss4 : {
+        attackVector: "Attack Vector",
+        network: "Network",
+        adjacent: "Adjacent",
+        local: "Local",
+        physical: "Physical",
+        attackComplexity: "Attack Complexity",
+        low: "Low",
+        high: "High",
+        attackRequirements: "Attack Requirements",
+        none: "None",
+        passive: "Passive",
+        active: "Active",
+        privilegesRequired: "Privileges Required",
+        userInteraction: "User Interaction",
+        confidentiality: "Confidentiality",
+        integrity: "Integrity",
+        availability: "Availability",
+
+
+
     },
     registerFirstUser: 'Register First User',
     customData: 'Custom Data',

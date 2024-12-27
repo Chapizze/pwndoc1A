@@ -102,8 +102,15 @@ async function getFindingBySeverity(isAllowed, userId, year) {
 exports.getFindingBySeverity = getFindingBySeverity
 const getFindingSeverity = (finding, audit) => {
     let severity = "None"
-    let cvss = CVSS31.calculateCVSSFromVector(finding.cvssv3)
-    if (cvss.success) {
+    var cvss ;
+    if(finding.cvssv3){
+        cvss = CVSS31.calculateCVSSFromVector(finding.cvssv3)
+    }
+    else if(finding.cvss.cvssv3){
+        cvss = CVSS31.calculateCVSSFromVector(finding.cvss.cvssv3)
+    }
+
+    if (cvss) {
         severity = cvss.baseSeverity
 
         let category = finding.category || "No Category"

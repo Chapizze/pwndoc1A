@@ -683,9 +683,9 @@ export default {
       return hasErrors
     };
 
-    onMounted(() => {
-      getFinding();
-      getVulnerabilityCategories();
+    onMounted(async () => {
+      await getFinding();
+      await  getVulnerabilityCategories();
       socket.emit('menu', { menu: 'editFinding', finding: findingId.value, room: auditId.value });
       syncEditors();
       updateOrig();

@@ -239,7 +239,7 @@
                             <q-card id="cvssField" class="q-mt-md bg-grey-1"
                                 :class="{'highlighted-border': fieldHighlighted == 'cvssField' && $parent.$parent.commentMode}">
                                 <div class="col-12">
-                                    <cvss-calculator v-model="finding.cvssv3"
+                                    <cvss-calculator v-model="finding.cvss"
                                         :readonly="frontEndAuditState !== AUDIT_VIEW_STATE.EDIT" />
                                     <q-badge v-if="$parent.$parent.commentMode" color="deep-purple" floating
                                         class="cursor-pointer" @click="createComment('cvssField')">

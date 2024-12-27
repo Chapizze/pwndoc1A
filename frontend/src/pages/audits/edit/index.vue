@@ -395,10 +395,16 @@
   
 	  const getFindingSeverity = (finding) => {
 			let severity = "None"
-			let cvss = CVSS31.calculateCVSSFromVector(finding.cvssv3)
-			if (cvss.success) {
+			var cvss;
+			if(finding.cvss.cvssv3) {
+				cvss = CVSS31.calculateCVSSFromVector(finding.cvss.cvssv3)
+			}
+			else{
+				cvss = CVSS4.calculateCVSSFromVector(finding.cvss.cvssv4)
+			}
+			try {
+				if (cvss) {
 				severity = cvss.baseSeverity
-
 				let category = finding.category || "No Category"
 				let sortOption = audit.sortFindings.find(e => e.category === category)
 
@@ -408,6 +414,10 @@
 					else if (sortOption.sortValue === "cvssTemporalScore")
 						severity = cvss.temporalSeverity
 				}
+				}
+			}
+			catch (err) {
+				console.log(err)
 			}
 			return severity
 	  };
